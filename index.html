@@ -7,13 +7,12 @@
     <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,700,1,0" />
-    
-    <!-- Gurasuraisu API -->
     <script src="/assets/gurapp/api/gurasuraisu-api.js" defer></script>
-    
-    <!-- Trystero P2P Library -->
-    <script src="https://cdn.jsdelivr.net/npm/trystero@0.13.0/dist/trystero-torrent.min.js"></script>
-
+    <script type="module">
+        import { joinRoom, selfId } from 'https://esm.sh/trystero@0.15.1/torrent';
+        window.Trystero = { joinRoom, selfId };
+        window.dispatchEvent(new Event('trystero-ready'));
+    </script>
     <style>
         * {
             margin: 0;
@@ -469,12 +468,21 @@
                     'wss://tracker.openwebtorrent.com',
                     'wss://tracker.btorrent.xyz',
                     'wss://tracker.webtorrent.dev',
-                    'wss://tracker.sloppyta.co:443/announce'
-                ]
+                    'wss://tracker.sloppyta.co:443/announce',
+                    'wss://tracker.novage.com.ua:443/announce',
+                    'wss://tracker.nanoha.org:443/announce',
+                    'wss://tracker.ghostchu-services.top:443/announce',
+                    'wss://tracker.files.fm:7073/announce'
+                ],
+                rtcConfig: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:global.stun.twilio.com:3478' }
+                    ]
+                }
             };
 
             try {
-                // Initialize Trystero using the capital 'T' global
                 trysteroRoom = window.Trystero.joinRoom(MESSAGES_CONFIG, currentRoomId);
 
                 // Setup Actions
@@ -581,16 +589,15 @@
             }, 500);
         });
 
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', () => {
-            // Ensure Trystero is loaded before calling
-            const checkTrystero = setInterval(() => {
-                if (window.Trystero) {
-                    clearInterval(checkTrystero);
-                    initConnection();
-                }
-            }, 100);
-        });
+        function bootstrap() {
+            if (!window.Trystero) {
+                window.addEventListener('trystero-ready', bootstrap, { once: true });
+                return;
+            }
+            initConnection();
+        }
+
+        document.addEventListener('DOMContentLoaded', bootstrap);
 
     </script>
 </body>
