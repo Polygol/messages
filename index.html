@@ -7,573 +7,6 @@
     <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,700,1,0" />
-    <script src="/assets/gurapp/api/gurasuraisu-api.js" defer></script>
-    <script type="module">
-        import { joinRoom, selfId } from 'https://esm.sh/trystero@0.15.1/torrent';
-        window.Trystero = { joinRoom, selfId };
-        window.dispatchEvent(new Event('trystero-ready'));
-    </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .material-symbols-rounded {
-            vertical-align: middle;
-        }
-        
-        body {
-           background-color: var(--background-color-tr);
-           min-height: 100vh;
-           display: flex;
-           flex-direction: column;
-           align-items: center;
-           padding: 20px;
-           padding-top: 80px;
-           user-select: none;
-           transition: background-color 0.3s, color 0.3s;
-           color: var(--text-color);
-        }
-        
-        .container {
-           width: 100%;
-           max-width: 600px;
-           height: 100%;
-           display: flex;
-           flex-direction: column;
-        }
-        
-        .tab-content {
-            display: none;
-            flex-grow: 1;
-            margin-bottom: 90px;
-        }
-        
-        .tab-content.active {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* --- Input Section (Matched to Fantaskical) --- */
-        .input-section {
-            display: flex;
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 500px;
-            width: 90%;
-            z-index: 10;
-        }
-        
-        .chat-input {
-            flex-grow: 1;
-            background-color: transparent;
-            border: none;
-            color: var(--text-color);
-            font-size: 1rem;
-            outline: none;
-            padding: 15px 20px;
-            background-color: var(--search-background);
-            border-radius: 32px;
-            border: 1px solid var(--glass-border);
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
-            box-shadow: var(--sun-shadow), 0 0 15px rgba(0, 0, 0, 0.05);
-            margin-right: 15px;
-            transition: all 0.3s cubic-bezier(.3,1.2,.64,1);
-        }
-        
-        .add-btn {
-            padding: 15px 15px;
-            background-color: var(--search-background);
-            border-radius: 32px;
-            border: 1px solid var(--glass-border);
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
-            box-shadow: var(--sun-shadow), 0 0 15px rgba(0, 0, 0, 0.05);
-            color: var(--text-color);
-            transition: all 0.3s cubic-bezier(.3,1.2,.64,1);
-            cursor: pointer;
-        }
-
-        .chat-input:focus {
-            margin-right: 0;
-            min-width: 100%;
-        }
-
-        .input-section:has(.chat-input:focus) .add-btn {
-            scale: 0;
-            width: 0;
-            opacity: 0;
-            padding: 0;
-            border: 0;
-            margin: 0;
-        }
-        
-        /* --- Chat Messages --- */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            overflow-y: auto;
-            padding: 10px;
-            padding-bottom: 20px;
-            flex-grow: 1;
-            scroll-behavior: smooth;
-        }
-
-        .chat-container::-webkit-scrollbar {
-            display: none;
-        }
-
-        .message-bubble {
-            display: flex;
-            flex-direction: column;
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 20px;
-            box-shadow: var(--sun-shadow);
-            animation: popIn 0.3s cubic-bezier(0.2, 1.3, 0.64, 1);
-        }
-
-        .message-bubble.mine {
-            align-self: flex-end;
-            background-color: var(--accent);
-            color: var(--background-color);
-            border-bottom-right-radius: 4px;
-        }
-
-        .message-bubble.theirs {
-            align-self: flex-start;
-            background-color: var(--search-background);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
-            border-bottom-left-radius: 4px;
-        }
-
-        .message-sender {
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-            opacity: 0.8;
-            font-family: 'Open Runde', sans-serif;
-        }
-
-        .message-text {
-            font-size: 1rem;
-            word-wrap: break-word;
-            line-height: 1.4;
-        }
-
-        .message-time {
-            font-size: 0.65rem;
-            align-self: flex-end;
-            margin-top: 4px;
-            opacity: 0.6;
-        }
-
-        /* --- Room Settings --- */
-        .settings-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            padding: 20px;
-            background-color: var(--search-background);
-            border-radius: 35px;
-            corner-shape: superellipse(1.5);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
-            box-shadow: var(--sun-shadow);
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .form-label {
-            font-size: 0.9rem;
-            color: var(--secondary-text-color);
-            font-weight: 500;
-        }
-
-        .form-input {
-            padding: 12px 16px;
-            border-radius: 25px;
-            corner-shape: superellipse(1.5);
-            border: 1px solid var(--glass-border);
-            background-color: var(--background-color-tr);
-            color: var(--text-color);
-            font-size: 1rem;
-            outline: none;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            background-color: rgba(255, 255, 255, 0.1);
-            align-self: flex-start;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #ff5252;
-            transition: background-color 0.3s;
-        }
-
-        .status-dot.connected {
-            background-color: #4caf50;
-        }
-
-        .peer-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 15px;
-        }
-
-        .peer-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 15px;
-            background-color: var(--background-color-tr);
-            border-radius: 20px;
-            border: 1px solid var(--glass-border);
-        }
-
-        /* Animations */
-        @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        button, .tab-btn {
-            transform: scale(1);
-            transition: all 0.15s cubic-bezier(0.2, 0, 0.38, 0.9);
-        }
-
-        button:active, .tab-btn:active {
-            transform: scale(1.1);
-            filter: brightness(1.5);
-        }
-        
-        .reduce-animations button:active,
-        .reduce-animations .tab-btn:active {
-           transform: scale(1) !important;
-           transition: none !important;
-           filter: brightness(1.5) !important;
-        }
-    </style>
-</head>
-<body data-app-name="MESSAGES">
-    <div class="container">
-        <!-- Toolbar -->
-        <div class="toolbar">
-            <button class="tab-btn active" data-tab="chat"><span class="material-symbols-rounded">chat</span>Chat</button>
-            <button class="tab-btn" data-tab="room"><span class="material-symbols-rounded">cell_tower</span>Network</button>
-        </div>
-        
-        <!-- Chat Tab -->
-        <div class="tab-content active" id="chat-content">
-            <div class="chat-container" id="chat-messages">
-                <div style="text-align: center; opacity: 0.5; font-size: 0.85rem; margin-top: 20px;" id="empty-state">
-                    Add people to this chat
-                </div>
-            </div>
-            
-            <div class="input-section">
-                <input type="text" class="chat-input" id="message-input" placeholder="Type a message" autocomplete="off">
-                <button class="add-btn" id="send-btn"><span class="material-symbols-rounded">send</span></button>
-            </div>
-        </div>
-
-        <!-- Room Tab -->
-        <div class="tab-content" id="room-content">
-            <div class="settings-form">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="font-family: 'Open Runde', sans-serif;">Network Configuration</h3>
-                    <div class="status-badge" id="connection-status">
-                        <div class="status-dot" id="status-dot"></div>
-                        <span id="status-text">Disconnected</span>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Your name</label>
-                    <input type="text" class="form-input" id="username-input" placeholder="Enter a name">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Room ID</label>
-                    <input type="text" class="form-input" id="room-id-input" placeholder="Enter an ID">
-                </div>
-
-                <button class="add-btn" id="connect-btn" style="width: 100%; border-radius: 25px; margin-top: 10px; background-color: var(--accent); color: var(--background-color);">
-                    Connect
-                </button>
-
-                <div style="margin-top: 20px;">
-                    <label class="form-label">Active poople (<span id="peer-count">0</span>)</label>
-                    <div class="peer-list" id="peer-list">
-                        <div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No one else is here</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // --- Tab Management ---
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
-                tabContents.forEach(content => content.classList.remove('active'));
-                const tabId = button.dataset.tab + '-content';
-                document.getElementById(tabId).classList.add('active');
-
-                // If switching to chat, scroll to bottom
-                if (button.dataset.tab === 'chat') {
-                    scrollToBottom();
-                }
-            });
-        });
-
-        // --- Trystero P2P Logic ---
-        let trysteroRoom = null;
-        let sendChatMessage = null;
-        let sendProfile = null;
-        let peers = {}; // Map of peerId -> { username }
-
-        // DOM Elements
-        const chatMessages = document.getElementById('chat-messages');
-        const messageInput = document.getElementById('message-input');
-        const sendBtn = document.getElementById('send-btn');
-        const usernameInput = document.getElementById('username-input');
-        const roomIdInput = document.getElementById('room-id-input');
-        const connectBtn = document.getElementById('connect-btn');
-        const statusDot = document.getElementById('status-dot');
-        const statusText = document.getElementById('status-text');
-        const peerList = document.getElementById('peer-list');
-        const peerCount = document.getElementById('peer-count');
-        const emptyState = document.getElementById('empty-state');
-
-        // State
-        let currentRoomId = localStorage.getItem('messages_room_id') || generateRandomString(8);
-        let currentUsername = localStorage.getItem('messages_username') || 'User_' + generateRandomString(4);
-        let isConnected = false;
-
-        // Initialize UI values
-        usernameInput.value = currentUsername;
-        roomIdInput.value = currentRoomId;
-
-        function generateRandomString(length) {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let result = '';
-            for (let i = 0; i < length; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-            return result;
-        }
-
-        function formatTime(date) {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-
-        function scrollToBottom() {
-            setTimeout(() => {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 50);
-        }
-
-        function appendMessage(text, senderName, isMine) {
-            if (emptyState) emptyState.style.display = 'none';
-
-            const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${isMine ? 'mine' : 'theirs'}`;
-
-            if (!isMine) {
-                const senderEl = document.createElement('div');
-                senderEl.className = 'message-sender';
-                senderEl.textContent = senderName || 'Unknown';
-                bubble.appendChild(senderEl);
-            }
-
-            const textEl = document.createElement('div');
-            textEl.className = 'message-text';
-            textEl.textContent = text;
-            bubble.appendChild(textEl);
-
-            const timeEl = document.createElement('div');
-            timeEl.className = 'message-time';
-            timeEl.textContent = formatTime(new Date());
-            bubble.appendChild(timeEl);
-
-            chatMessages.appendChild(bubble);
-            scrollToBottom();
-        }
-
-        function updatePeerUI() {
-            peerCount.textContent = Object.keys(peers).length;
-            peerList.innerHTML = '';
-
-            if (Object.keys(peers).length === 0) {
-                peerList.innerHTML = '<div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No one else is here.</div>';
-                return;
-            }
-
-            Object.entries(peers).forEach(([id, data]) => {
-                const item = document.createElement('div');
-                item.className = 'peer-item';
-                item.innerHTML = `
-                    <span class="material-symbols-rounded" style="color: #4caf50;">person</span>
-                    <span>${data.username || 'Connecting'}</span>
-                `;
-                peerList.appendChild(item);
-            });
-        }
-
-        async function initConnection() {
-            if (isConnected && trysteroRoom) {
-                trysteroRoom.leave();
-            }
-
-            currentUsername = usernameInput.value.trim() || 'Anonymous';
-            currentRoomId = roomIdInput.value.trim() || generateRandomString(8);
-
-            localStorage.setItem('messages_username', currentUsername);
-            localStorage.setItem('messages_room_id', currentRoomId);
-
-            statusDot.classList.remove('connected');
-            statusText.textContent = 'Connecting';
-            connectBtn.textContent = 'Reconnecting';
-
-            const MESSAGES_CONFIG = { 
-                appId: 'polygol-messages-v1',
-                trackerUrls: [
-                    'wss://tracker.openwebtorrent.com',
-                    'wss://tracker.btorrent.xyz',
-                    'wss://tracker.webtorrent.dev',
-                    'wss://tracker.sloppyta.co:443/announce',
-                    'wss://tracker.novage.com.ua:443/announce',
-                    'wss://tracker.nanoha.org:443/announce',
-                    'wss://tracker.ghostchu-services.top:443/announce',
-                    'wss://tracker.files.fm:7073/announce'
-                ],
-                rtcConfig: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:global.stun.twilio.com:3478' }
-                    ]
-                }
-            };
-
-            try {
-                trysteroRoom = window.Trystero.joinRoom(MESSAGES_CONFIG, currentRoomId);
-
-                // Setup Actions
-                const [sendChat, getChat] = trysteroRoom.makeAction('chat');
-                const [sendProf, getProf] = trysteroRoom.makeAction('profile');
-
-                sendChatMessage = sendChat;
-                sendProfile = sendProf;
-
-                // Handle Incoming Chat
-                getChat((msg, peerId) => {
-                    const senderName = peers[peerId] ? peers[peerId].username : 'Unknown';
-                    appendMessage(msg.text, senderName, false);
-                    
-                    // Notification Logic
-                    Gurasuraisu.playSound('success');
-                    if (!document.hasFocus()) {
-                        Gurasuraisu.showNotification(`New message from ${senderName}`, {
-                            heading: 'Messages',
-                            icon: 'chat'
-                        });
-                    }
-                });
-
-                // Handle Incoming Profile updates
-                getProf((profile, peerId) => {
-                    if (!peers[peerId]) peers[peerId] = {};
-                    peers[peerId].username = profile.username;
-                    updatePeerUI();
-                });
-
-                // Handle Peer Join
-                trysteroRoom.onPeerJoin(peerId => {
-                    peers[peerId] = { username: '...' };
-                    updatePeerUI();
-                    
-                    // Send our profile to the new peer so they know who we are
-                    if (sendProfile) {
-                        sendProfile({ username: currentUsername }, peerId);
-                    }
-                });
-
-                // Handle Peer Leave
-                trysteroRoom.onPeerLeave(peerId => {
-                    delete peers[peerId];
-                    updatePeerUI();
-                });
-
-                // Update Local UI State
-                isConnected = true;
-                statusDot.classList.add('connected');
-                statusText.textContent = `Connected (${currentRoomId})`;
-                connectBtn.textContent = 'Reconnect / Update';
-                
-                Gurasuraisu.showPopup(`Joined room: ${currentRoomId}`);
-
-            } catch (e) {
-                console.error("Failed to initialize Trystero:", e);
-                statusText.textContent = 'Error Connecting';
-                Gurasuraisu.showPopup("Failed to connect to P2P network.");
-            }
-        }
-
-        // --- Interaction Handlers ---
-
-        function handleSend() {
-            if (!isConnected || !sendChatMessage) {
-                Gurasuraisu.showPopup("You must connect to a room first.");
-                return;
-            }
-
-            const text = messageInput.value.trim();
-            if (!text) return;
-
-            // Broadcast to all peers
-            sendChatMessage({ text: text });
-            
-            // Add to local UI
-            appendMessage(text, currentUsername, true);
-            Gurasuraisu.playSound('check');
-            
-            // Clear input
-            messageInput.value = '';<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Messages</title>
-    <link rel="icon" href="favicon.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,700,1,0" />
     
     <!-- Gurasuraisu API -->
     <script src="/assets/gurapp/api/gurasuraisu-api.js" defer></script>
@@ -941,6 +374,58 @@
         }
         .send-btn:active { transform: scale(0.9); }
 
+        /* Segmented Control / Switcher */
+        .segmented-control {
+            display: flex;
+            background: var(--background-color-tr);
+            padding: 4px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .segment-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .segment-btn.active {
+            background: var(--search-background);
+            box-shadow: var(--sun-shadow);
+            color: var(--accent);
+        }
+        
+        .modal-desc {
+            color: var(--secondary-text-color);
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        /* Tab Logic */
+        .modal-tab-content {
+            display: none;
+        }
+        
+        .modal-tab-content.active {
+            display: block;
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* --- Modals --- */
         .modal-overlay {
             position: fixed;
@@ -1027,15 +512,15 @@
     <div id="setup-view" class="view">
         <div class="setup-container">
             <h1 style="font-family: 'Open Runde', sans-serif; margin-bottom: 10px;">Polygol Messages</h1>
-            <p style="color: var(--secondary-text-color); margin-bottom: 30px;">Set up your profile</p>
+            <p style="color: var(--secondary-text-color); margin-bottom: 30px;">Who are you?</p>
 
             <div class="avatar-upload" id="setup-avatar-btn">
                 <span class="material-symbols-rounded" style="font-size: 48px; opacity: 0.5;">add_a_photo</span>
                 <img id="setup-avatar-preview" src="" alt="Avatar">
             </div>
 
-            <input type="text" id="setup-name-input" class="form-input" placeholder="Your Display Name">
-            <button class="primary-btn" id="setup-complete-btn">Start Messaging</button>
+            <input type="text" id="setup-name-input" class="form-input" placeholder="Your name">
+            <button class="primary-btn" id="setup-complete-btn">Get Started</button>
         </div>
     </div>
 
@@ -1085,40 +570,56 @@
     <!-- New Chat Modal -->
     <div id="new-chat-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-title">New Conversation</div>
-            <p style="color: var(--secondary-text-color); font-size: 0.9rem; text-align: center; margin-bottom: 20px;">
-                Create a new chat or join an existing one using an Invite code
-            </p>
-            
-            <input type="text" id="join-code-input" class="form-input" style="width: 100%; max-width: none;" placeholder="Invite code">
-            
-            <div class="modal-actions">
-                <button class="modal-btn" id="cancel-new-chat">Cancel</button>
-                <button class="modal-btn primary" id="join-chat-btn">Join chat</button>
-                <button class="modal-btn primary" id="create-chat-btn" style="width: 100%;">Show code</button>
+            <!-- Tab Switcher -->
+            <div class="segmented-control">
+                <button class="segment-btn active" data-mode="create">Create</button>
+                <button class="segment-btn" data-mode="join">Join</button>
             </div>
-                        
+    
+            <!-- Create Section -->
+            <div id="modal-mode-create" class="modal-tab-content active">
+                <p class="modal-desc">Start a new conversation. You'll get a code to invite others.</p>
+                <div class="form-group">
+                    <label class="form-label">Chat Name</label>
+                    <input type="text" id="create-chat-name-input" class="form-input" style="width: 100%; max-width: none;" placeholder="Name">
+                </div>
+                <button class="modal-btn primary" id="create-chat-confirm" style="width: 100%; margin-top: 10px;">Create</button>
+            </div>
+    
+            <!-- Join Section -->
+            <div id="modal-mode-join" class="modal-tab-content">
+                <p class="modal-desc">Enter an invite code from a friend to join their secure chat.</p>
+                <div class="form-group">
+                    <label class="form-label">Invite Code</label>
+                    <input type="text" id="join-code-input" class="form-input" style="width: 100%; max-width: none;" placeholder="Code">
+                </div>
+                <button class="modal-btn primary" id="join-chat-confirm" style="width: 100%; margin-top: 10px;">Join</button>
+            </div>
+    
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="modal-btn" id="cancel-new-chat" style="border: none; opacity: 0.6;">Dismiss</button>
+            </div>            
         </div>
     </div>
 
     <!-- Chat Info Modal -->
     <div id="chat-info-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-title">Chat Info</div>
+            <div class="modal-title">Details</div>
             <div class="form-group" style="margin-bottom: 15px;">
-                <label class="form-label">Chat Name (Local)</label>
+                <label class="form-label">Chat name (only visible to you)</label>
                 <input type="text" id="edit-chat-name" class="form-input" style="width: 100%; max-width: none;">
             </div>
             
-            <label class="form-label">Invite code</label>
+            <label class="form-label">Secure Invite Code</label>
             <div class="invite-code-box" id="invite-code-display"></div>
             <p style="font-size: 0.8rem; color: var(--secondary-text-color); text-align: center; margin-bottom: 15px;">
-                Share this code with others so they can join the chat
+                Share this code with others so they can join this chat
             </p>
 
             <div class="modal-actions">
                 <button class="modal-btn" id="close-info-btn">Close</button>
-                <button class="modal-btn" id="delete-chat-btn" style="color: #ff5252; border-color: #ff5252;">Delete chat</button>
+                <button class="modal-btn" id="delete-chat-btn" style="color: #ff5252; border-color: #ff5252;">Delete</button>
             </div>
         </div>
     </div>
@@ -1243,7 +744,7 @@
 
         // --- Trystero Networking ---
         const TRYSTERO_CONFIG = { 
-            appId: 'polygol-messages-v1',
+            appId: 'polygol-secure-msg-v1',
             trackerUrls: [
                 'wss://tracker.openwebtorrent.com',
                 'wss://tracker.btorrent.xyz',
@@ -1369,7 +870,7 @@
                         <img src="${avatarSrc}">
                     </div>
                     <div class="chat-list-info">
-                        <div class="chat-list-name">${chat.name || 'Secure Chat'}</div>
+                        <div class="chat-list-name">${chat.name || 'Chat'}</div>
                         <div class="chat-list-preview" style="${chat.unread ? 'color: var(--accent); font-weight: 600;' : ''}">
                             ${chat.unread ? `${chat.unread} new messages` : 'Tap to open chat'}
                         </div>
@@ -1494,7 +995,7 @@
             const avatarSrc = document.getElementById('setup-avatar-preview').src;
             
             if (!name) {
-                Gurasuraisu.showPopup("Please enter a display name.");
+                Gurasuraisu.showPopup("Enter a display name");
                 return;
             }
 
@@ -1518,41 +1019,58 @@
             document.getElementById('new-chat-modal').classList.remove('active');
         });
 
-        document.getElementById('create-chat-btn').addEventListener('click', async () => {
+        document.querySelectorAll('.segment-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const mode = btn.dataset.mode;
+                document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`modal-mode-${mode}`).classList.add('active');
+            });
+        });
+        
+        document.getElementById('create-chat-confirm').addEventListener('click', async () => {
+            const nameInput = document.getElementById('create-chat-name-input');
+            const chatName = nameInput.value.trim() || 'New Chat';
+            
             const chatId = generateCryptoId(32);
             
             const newChat = {
                 id: chatId,
-                name: 'New Chat',
+                name: chatName,
                 type: 'direct',
                 peers: {},
                 unread: 0
             };
-
+        
             chats[chatId] = newChat;
             await saveChatMeta(newChat);
             connectToChatNetwork(chatId);
             
+            nameInput.value = ''; // Reset for next time
             document.getElementById('new-chat-modal').classList.remove('active');
             openChat(chatId);
             
-            // Show info modal immediately so they can copy the code
+            // Auto-open info to show the code for sharing
             document.getElementById('chat-info-btn').click();
         });
 
-        document.getElementById('join-chat-btn').addEventListener('click', async () => {
-            const code = document.getElementById('join-code-input').value.trim();
+        document.getElementById('join-chat-confirm').addEventListener('click', async () => {
+            const input = document.getElementById('join-code-input');
+            const code = input.value.trim();
+            
             if (!code || code.length < 16) {
-                Gurasuraisu.showPopup("Invalid Invite Code");
+                Gurasuraisu.showPopup("Enter a valid Invite Code");
                 return;
             }
-
+        
+            // Process joining
             if (chats[code]) {
                 document.getElementById('new-chat-modal').classList.remove('active');
                 openChat(code);
                 return;
             }
-
+        
             const newChat = {
                 id: code,
                 name: 'Secure Chat',
@@ -1560,11 +1078,12 @@
                 peers: {},
                 unread: 0
             };
-
+        
             chats[code] = newChat;
             await saveChatMeta(newChat);
             connectToChatNetwork(code);
             
+            input.value = '';
             document.getElementById('new-chat-modal').classList.remove('active');
             openChat(code);
         });
@@ -1665,7 +1184,7 @@
                         return;
                     }
 
-                    Gurasuraisu.showPopup("Sending item");
+                    Gurasuraisu.showPopup("Processing attachment...");
                     const b64 = await fileToBase64(file);
                     
                     const attachment = {
@@ -1713,42 +1232,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
-
-    </script>
-</body>
-</html>
-            
-            // Refocus input if on desktop
-            if (window.innerWidth > 800) {
-                messageInput.focus();
-            }
-        }
-
-        sendBtn.addEventListener('click', handleSend);
-        
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleSend();
-            }
-        });
-
-        connectBtn.addEventListener('click', () => {
-            initConnection();
-            // Automatically switch back to chat tab after connecting
-            setTimeout(() => {
-                tabButtons[0].click();
-            }, 500);
-        });
-
-        function bootstrap() {
-            if (!window.Trystero) {
-                window.addEventListener('trystero-ready', bootstrap, { once: true });
-                return;
-            }
-            initConnection();
-        }
-
-        document.addEventListener('DOMContentLoaded', bootstrap);
 
     </script>
 </body>
