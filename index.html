@@ -289,12 +289,12 @@
         <div class="tab-content active" id="chat-content">
             <div class="chat-container" id="chat-messages">
                 <div style="text-align: center; opacity: 0.5; font-size: 0.85rem; margin-top: 20px;" id="empty-state">
-                    Waiting for peers to join...
+                    Add people to this chat
                 </div>
             </div>
             
             <div class="input-section">
-                <input type="text" class="chat-input" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <input type="text" class="chat-input" id="message-input" placeholder="Type a message" autocomplete="off">
                 <button class="add-btn" id="send-btn"><span class="material-symbols-rounded">send</span></button>
             </div>
         </div>
@@ -311,13 +311,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Your Username</label>
-                    <input type="text" class="form-input" id="username-input" placeholder="e.g. Anonymous">
+                    <label class="form-label">Your name</label>
+                    <input type="text" class="form-input" id="username-input" placeholder="Enter a name">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Room ID (Passphrase)</label>
-                    <input type="text" class="form-input" id="room-id-input" placeholder="e.g. my-secret-room">
+                    <label class="form-label">Room ID</label>
+                    <input type="text" class="form-input" id="room-id-input" placeholder="Enter an ID">
                 </div>
 
                 <button class="add-btn" id="connect-btn" style="width: 100%; border-radius: 25px; margin-top: 10px; background-color: var(--accent); color: var(--background-color);">
@@ -325,9 +325,9 @@
                 </button>
 
                 <div style="margin-top: 20px;">
-                    <label class="form-label">Active Peers (<span id="peer-count">0</span>)</label>
+                    <label class="form-label">Active poople (<span id="peer-count">0</span>)</label>
                     <div class="peer-list" id="peer-list">
-                        <div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No one else is here.</div>
+                        <div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No one else is here</div>
                     </div>
                 </div>
             </div>
@@ -441,7 +441,7 @@
                 item.className = 'peer-item';
                 item.innerHTML = `
                     <span class="material-symbols-rounded" style="color: #4caf50;">person</span>
-                    <span>${data.username || 'Connecting...'}</span>
+                    <span>${data.username || 'Connecting'}</span>
                 `;
                 peerList.appendChild(item);
             });
@@ -459,8 +459,8 @@
             localStorage.setItem('messages_room_id', currentRoomId);
 
             statusDot.classList.remove('connected');
-            statusText.textContent = 'Connecting...';
-            connectBtn.textContent = 'Reconnecting...';
+            statusText.textContent = 'Connecting';
+            connectBtn.textContent = 'Reconnecting';
 
             const MESSAGES_CONFIG = { 
                 appId: 'polygol-messages-v1',
