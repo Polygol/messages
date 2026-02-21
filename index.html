@@ -463,10 +463,19 @@
             statusText.textContent = 'Connecting...';
             connectBtn.textContent = 'Reconnecting...';
 
+            const MESSAGES_CONFIG = { 
+                appId: 'polygol-messages-v1',
+                trackerUrls: [
+                    'wss://tracker.openwebtorrent.com',
+                    'wss://tracker.btorrent.xyz',
+                    'wss://tracker.webtorrent.dev',
+                    'wss://tracker.sloppyta.co:443/announce'
+                ]
+            };
+
             try {
-                // Initialize Trystero
-                const config = { appId: 'polygol-messages-v1' };
-                trysteroRoom = window.trystero.joinRoom(config, currentRoomId);
+                // Initialize Trystero using the capital 'T' global
+                trysteroRoom = window.Trystero.joinRoom(MESSAGES_CONFIG, currentRoomId);
 
                 // Setup Actions
                 const [sendChat, getChat] = trysteroRoom.makeAction('chat');
@@ -576,7 +585,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Ensure Trystero is loaded before calling
             const checkTrystero = setInterval(() => {
-                if (window.trystero) {
+                if (window.Trystero) {
                     clearInterval(checkTrystero);
                     initConnection();
                 }
