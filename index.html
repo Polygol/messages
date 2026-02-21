@@ -27,42 +27,65 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        .material-symbols-rounded {
+            vertical-align: middle;
+        }
+        
         body {
            background-color: var(--background-color-tr);
            min-height: 100vh;
            display: flex;
            flex-direction: column;
+           align-items: center;
+           padding: 20px;
+           padding-top: 80px;
+           user-select: none;
+           transition: background-color 0.3s, color 0.3s;
            color: var(--text-color);
-           overflow: hidden;
+           overflow: hidden; /* Prevent body scroll, handle internally */
+        }
+        
+        .container {
+           width: 100%;
+           max-width: 800px;
+           height: 100%;
+           display: flex;
+           flex-direction: column;
+           position: relative;
         }
 
+        /* --- Views (Tab System) --- */
         .view {
             display: none;
             flex-direction: column;
             width: 100%;
-            height: 100vh;
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
+            height: calc(100vh - 100px); /* Account for padding */
+            animation: fadeIn 0.3s ease;
         }
 
         .view.active {
             display: flex;
         }
 
-        /* --- Header --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Headers (Glassmorphism) --- */
         .app-header {
             display: flex;
             align-items: center;
             padding: 15px 20px;
-            background: var(--search-background);
+            background-color: var(--search-background);
+            border-radius: 35px;
+            corner-shape: superellipse(1.5);
+            border: 1px solid var(--glass-border);
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(5px);
-            border-bottom: 1px solid var(--glass-border);
             box-shadow: var(--sun-shadow);
-            z-index: 10;
+            margin-bottom: 15px;
             height: 70px;
             flex-shrink: 0;
-            padding-top: max(15px, env(safe-area-inset-top));
         }
 
         .header-title {
@@ -77,16 +100,17 @@
         }
 
         .header-avatar {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             object-fit: cover;
             border: 1px solid var(--glass-border);
         }
 
+        /* --- Buttons (Matched to Fantaskical .action-btn / Chronos) --- */
         .icon-btn {
             background: transparent;
-            border: none;
+            border: 1px solid transparent;
             color: var(--text-color);
             cursor: pointer;
             padding: 8px;
@@ -94,109 +118,37 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.2, 1.3, .64, 1);
         }
 
         .icon-btn:active {
-            background: var(--accent);
-            color: var(--background-color);
-            transform: scale(0.95);
+            transform: scale(0.9);
+            background-color: var(--search-background);
         }
 
-        /* --- Setup View --- */
-        .setup-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .avatar-upload {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: var(--search-background);
-            border: 2px dashed var(--glass-border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            box-shadow: var(--sun-shadow);
-        }
-
-        .avatar-upload img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            display: none;
-        }
-
-        .avatar-upload.has-image img {
-            display: block;
-        }
-
-        .form-input {
-            width: 100%;
-            max-width: 300px;
-            padding: 15px 20px;
-            border-radius: 25px;
-            border: 1px solid var(--glass-border);
-            background: var(--search-background);
-            color: var(--text-color);
-            font-size: 1rem;
-            outline: none;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: var(--sun-shadow);
-        }
-
-        .primary-btn {
-            background: var(--accent);
-            color: var(--background-color);
-            border: none;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: var(--sun-shadow);
-            transition: transform 0.2s;
-        }
-
-        .primary-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* --- Chat List View --- */
+        /* --- Chat List (Based on Fantaskical .task-item) --- */
         .chat-list {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 10px;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            padding-bottom: 80px; /* Space for FAB/Input */
         }
 
         .chat-list-item {
             display: flex;
             align-items: center;
-            padding: 15px;
-            background: var(--search-background);
-            border: 1px solid var(--glass-border);
-            border-radius: 25px;
+            padding: 15px 20px;
+            background-color: var(--search-background);
+            border-radius: 35px;
             corner-shape: superellipse(1.5);
-            cursor: pointer;
-            transition: all 0.2s;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
             box-shadow: var(--sun-shadow);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: transform 0.2s;
         }
 
         .chat-list-item:active {
@@ -227,15 +179,15 @@
         .chat-list-info {
             flex-grow: 1;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .chat-list-name {
             font-weight: 600;
             font-size: 1.05rem;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-family: 'Open Runde', sans-serif;
         }
 
         .chat-list-preview {
@@ -246,198 +198,149 @@
             text-overflow: ellipsis;
         }
 
+        /* --- Floating Action Button (FAB) --- */
         .fab {
             position: absolute;
             bottom: 30px;
-            right: 30px;
+            right: 20px;
             width: 60px;
             height: 60px;
             border-radius: 30px;
-            background: var(--accent);
-            color: var(--background-color);
+            background-color: var(--search-background);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(5px);
+            box-shadow: var(--sun-shadow), 0 5px 15px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--sun-shadow), 0 5px 15px rgba(0,0,0,0.3);
             cursor: pointer;
             z-index: 20;
-            transition: transform 0.2s;
+            transition: transform 0.2s cubic-bezier(0.2, 1.3, .64, 1);
         }
 
         .fab:active {
             transform: scale(0.9);
+            background-color: var(--accent);
+            color: var(--background-color);
         }
 
-        /* --- Chat View --- */
+        /* --- Chat Interface --- */
         .messages-container {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
+            /* Scrollbar styling */
+            scrollbar-width: none; 
         }
+        .messages-container::-webkit-scrollbar { display: none; }
 
         .message-bubble {
             max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 20px;
+            padding: 12px 18px;
+            border-radius: 24px;
             position: relative;
-            animation: popIn 0.3s cubic-bezier(0.2, 1.3, 0.64, 1);
+            font-size: 1rem;
             word-wrap: break-word;
+            box-shadow: var(--sun-shadow);
+            animation: popIn 0.3s cubic-bezier(0.2, 1.3, 0.64, 1);
         }
 
         .message-bubble.mine {
             align-self: flex-end;
-            background: var(--accent);
+            background-color: var(--accent);
             color: var(--background-color);
             border-bottom-right-radius: 4px;
-            box-shadow: var(--sun-shadow);
         }
 
         .message-bubble.theirs {
             align-self: flex-start;
-            background: var(--search-background);
+            background-color: var(--search-background);
             border: 1px solid var(--glass-border);
             color: var(--text-color);
             border-bottom-left-radius: 4px;
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(5px);
-            box-shadow: var(--sun-shadow);
+            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
         }
 
         .message-sender {
             font-size: 0.75rem;
             font-weight: 600;
-            margin-bottom: 5px;
-            opacity: 0.7;
+            margin-bottom: 4px;
+            opacity: 0.8;
+            font-family: 'Open Runde', sans-serif;
         }
 
         .message-time {
             font-size: 0.65rem;
-            margin-top: 5px;
+            margin-top: 4px;
             text-align: right;
-            opacity: 0.6;
+            opacity: 0.7;
         }
 
         .message-attachment {
             max-width: 100%;
-            border-radius: 10px;
-            margin-top: 5px;
+            border-radius: 12px;
+            margin-top: 8px;
             display: block;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .attachment-file {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 10px;
-            margin-top: 5px;
-            font-size: 0.85rem;
-        }
-
+        /* --- Input Area (Based on Fantaskical .input-section) --- */
         .chat-input-area {
             display: flex;
             align-items: center;
-            padding: 15px 20px;
-            background: var(--search-background);
+            padding: 10px;
+            margin-top: 10px;
+            background-color: var(--search-background);
+            border-radius: 40px;
+            border: 1px solid var(--glass-border);
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(5px);
-            border-top: 1px solid var(--glass-border);
+            box-shadow: var(--sun-shadow);
             gap: 10px;
-            padding-bottom: max(15px, env(safe-area-inset-bottom));
         }
 
         .chat-input {
             flex-grow: 1;
-            background: var(--background-color-tr);
-            border: 1px solid var(--glass-border);
-            padding: 12px 20px;
-            border-radius: 25px;
+            background: transparent;
+            border: none;
             color: var(--text-color);
-            outline: none;
             font-size: 1rem;
+            outline: none;
+            padding: 10px 5px;
         }
 
-        .send-btn {
-            background: var(--accent);
-            color: var(--background-color);
-            border: none;
-            width: 44px;
-            height: 44px;
-            border-radius: 22px;
+        .send-btn, .attach-btn {
+            background: var(--background-color);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .send-btn:active { transform: scale(0.9); }
-
-        /* Segmented Control / Switcher */
-        .segmented-control {
-            display: flex;
-            background: var(--background-color-tr);
-            padding: 4px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 1px solid var(--glass-border);
-        }
-        
-        .segment-btn {
-            flex: 1;
-            border: none;
-            background: transparent;
-            color: var(--text-color);
-            padding: 8px;
-            border-radius: 16px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .segment-btn.active {
-            background: var(--search-background);
+            transition: transform 0.2s cubic-bezier(0.2, 1.3, .64, 1);
             box-shadow: var(--sun-shadow);
-            color: var(--accent);
         }
         
-        .modal-desc {
-            color: var(--secondary-text-color);
-            font-size: 0.85rem;
-            text-align: center;
-            margin-bottom: 20px;
-            line-height: 1.4;
-        }
-        
-        /* Tab Logic */
-        .modal-tab-content {
-            display: none;
-        }
-        
-        .modal-tab-content.active {
-            display: block;
-            animation: fadeIn 0.2s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .send-btn:active, .attach-btn:active { transform: scale(0.9); background: var(--accent); color: var(--background-color); }
 
-        /* --- Modals --- */
+        /* --- Modals (Based on Fantaskical .add-event-modal) --- */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--overlay-color);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--overlay-color);
             backdrop-filter: blur(5px);
             display: none;
-            align-items: center;
             justify-content: center;
-            z-index: 100;
+            align-items: center;
+            z-index: 1000;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s ease;
         }
 
         .modal-overlay.active {
@@ -446,58 +349,157 @@
         }
 
         .modal-content {
-            background: var(--search-background);
-            border: 1px solid var(--glass-border);
-            padding: 25px;
-            border-radius: 35px;
+            background-color: var(--search-background);
+            border-radius: 50px;
             corner-shape: superellipse(1.5);
+            padding: 25px;
             width: 90%;
             max-width: 400px;
-            box-shadow: var(--sun-shadow), 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(10px);
+            box-shadow: var(--sun-shadow), 0 20px 50px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .modal-title {
             font-size: 1.2rem;
-            font-family: 'Open Runde', sans-serif;
-            font-weight: 600;
-            margin-bottom: 15px;
+            font-weight: 500;
+            font-family: 'Open Runde';
             text-align: center;
+            margin-bottom: 5px;
+        }
+
+        /* --- Setup View Specifics --- */
+        .setup-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            gap: 20px;
+        }
+
+        .avatar-upload {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: var(--search-background);
+            border: 2px dashed var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            box-shadow: var(--sun-shadow);
+            transition: transform 0.2s;
+        }
+        
+        .avatar-upload:active { transform: scale(0.95); }
+
+        .avatar-upload img {
+            width: 100%; height: 100%; object-fit: cover; display: none;
+        }
+        .avatar-upload.has-image img { display: block; }
+
+        .form-input {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            background-color: var(--search-background);
+            color: var(--text-color);
+            font-size: 1rem;
+            outline: none;
+            box-shadow: var(--sun-shadow);
+            text-align: center;
+        }
+
+        .modal-btn, .primary-btn {
+            background-color: var(--search-background);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 1.3, .64, 1);
+            box-shadow: var(--sun-shadow);
+            text-align: center;
+        }
+
+        .modal-btn.primary, .primary-btn {
+            background-color: var(--accent);
+            color: var(--background-color);
+        }
+
+        .modal-btn:active, .primary-btn:active {
+            transform: scale(0.95);
+            filter: brightness(1.2);
         }
 
         .modal-actions {
             display: flex;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 10px;
+        }
+        
+        .modal-actions button { flex: 1; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .modal-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 20px;
+        .form-label {
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            margin-left: 10px;
+        }
+        
+        /* Segmented Control (New Feature Style) - Matching .filter-btn */
+        .segmented-control {
+            display: flex;
+            background-color: var(--background-color-tr);
+            padding: 5px;
+            border-radius: 25px;
             border: 1px solid var(--glass-border);
-            background: transparent;
-            color: var(--text-color);
-            cursor: pointer;
-            font-weight: 600;
+            margin-bottom: 15px;
         }
 
-        .modal-btn.primary {
-            background: var(--accent);
-            color: var(--background-color);
+        .segment-btn {
+            flex: 1;
+            background: transparent;
             border: none;
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .segment-btn.active {
+            background-color: var(--search-background);
+            box-shadow: var(--sun-shadow);
+            color: var(--accent);
         }
 
         .invite-code-box {
-            background: rgba(0,0,0,0.2);
+            background-color: var(--background-color-tr);
             padding: 15px;
             border-radius: 15px;
             font-family: monospace;
             text-align: center;
-            word-break: break-all;
-            margin: 15px 0;
-            user-select: all;
             border: 1px dashed var(--glass-border);
+            word-break: break-all;
+            user-select: all;
         }
 
         @keyframes popIn {
