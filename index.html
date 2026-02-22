@@ -448,7 +448,7 @@
         const sendBtn = document.getElementById('send-btn');
         const attachBtn = document.getElementById('attach-btn');
 
-// --- Initialization ---
+        // --- Initialization ---
         async function loadState() {
             // Migration from localStorage to prevent data loss for existing users
             if (localStorage.getItem('messages_user')) {
@@ -615,7 +615,7 @@
         function renderChatList() {
             chatListContainer.innerHTML = '';
             if (chats.length === 0) {
-                chatListContainer.innerHTML = '<div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No chats yet</div>';
+                chatListContainer.innerHTML = '<div style="font-size: 0.85rem; padding: 10px;">Start a conversation</div>';
                 return;
             }
             chats.forEach(chat => {
