@@ -347,16 +347,9 @@
             <div id="chat-list-container" class="peer-list">
                 <div style="font-size: 0.85rem; padding: 10px;">Start a conversation</div>
             </div>
-            <div class="settings-form">
-                <h3>Join or Create a Chat</h3>
-                <div class="form-group">
-                    <label class="form-label">Invite Code</label>
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="join-code-input" class="form-input" placeholder="Enter Code" style="flex-grow:1;">
-                        <button id="join-chat-btn" class="add-btn" style="padding:12px 20px;">Join</button>
-                    </div>
-                </div>
-                <button id="create-chat-btn" class="add-btn" style="width:100%; border-radius:25px; background:var(--accent); color:var(--background-color);">Start New Chat</button>
+            <div class="input-section">
+                <input type="text" class="chat-input" id="join-code-input" placeholder="Enter code or chat name" autocomplete="off">
+                <button class="add-btn" id="join-create-chat-btn" style="padding:15px; border-radius:50%;"><span class="material-symbols-rounded">add</span></button>
             </div>
         </div>
 
@@ -387,7 +380,7 @@
     </div>
 
     <script>
-// --- Tab Management ---
+        // --- Tab Management ---
         const tabButtons = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
 
@@ -408,10 +401,53 @@
             });
         });
 
+        // --- IndexedDB Setup ---
+        const DB_NAME = 'PolygolMessagesDB';
+        const DB_VERSION = 1;
+        let idb;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('state')) db.createObjectStore('state');
+                    if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages');
+                };
+                request.onsuccess = (e) => {
+                    idb = e.target.result;
+                    resolve();
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function getDB(storeName, key) {
+            return new Promise((resolve, reject) => {
+                if (!idb) return resolve(null);
+                const tx = idb.transaction(storeName, 'readonly');
+                const store = tx.objectStore(storeName);
+                const req = store.get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function setDB(storeName, key, value) {
+            return new Promise((resolve, reject) => {
+                if (!idb) return resolve();
+                const tx = idb.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                const req = store.put(value, key);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
         // --- Core State ---
-        let currentUser = JSON.parse(localStorage.getItem('messages_user')) || null;
-        let chats = JSON.parse(localStorage.getItem('messages_chats')) || [];
-        let profiles = JSON.parse(localStorage.getItem('messages_profiles')) || {};
+        let currentUser = null;
+        let chats = [];
+        let profiles = {};
         let activeRooms = {};
         let currentChatId = null;
 
@@ -423,15 +459,38 @@
         const sendBtn = document.getElementById('send-btn');
         const attachBtn = document.getElementById('attach-btn');
 
-        // --- Initialization ---
-        function bootstrap() {
+// --- Initialization ---
+        async function loadState() {
+            // Migration from localStorage to prevent data loss for existing users
+            if (localStorage.getItem('messages_user')) {
+                await setDB('state', 'currentUser', JSON.parse(localStorage.getItem('messages_user')));
+                localStorage.removeItem('messages_user');
+            }
+            if (localStorage.getItem('messages_chats')) {
+                await setDB('state', 'chats', JSON.parse(localStorage.getItem('messages_chats')));
+                localStorage.removeItem('messages_chats');
+            }
+            if (localStorage.getItem('messages_profiles')) {
+                await setDB('state', 'profiles', JSON.parse(localStorage.getItem('messages_profiles')));
+                localStorage.removeItem('messages_profiles');
+            }
+
+            currentUser = await getDB('state', 'currentUser') || null;
+            chats = await getDB('state', 'chats') || [];
+            profiles = await getDB('state', 'profiles') || {};
+        }
+
+        async function bootstrap() {
+            await initDB();
+            await loadState();
+
             if (!currentUser) {
                 setupScreen.style.display = 'flex';
                 return;
             }
             
             profiles[currentUser.id] = { name: currentUser.name, pfp: currentUser.pfp };
-            saveProfiles();
+            await saveProfiles();
 
             if (!window.Trystero) {
                 window.addEventListener('trystero-ready', initRooms, { once: true });
@@ -457,7 +516,7 @@
             } catch (err) { console.error(err); }
         });
 
-        document.getElementById('finish-setup-btn').addEventListener('click', () => {
+        document.getElementById('finish-setup-btn').addEventListener('click', async () => {
             const name = document.getElementById('setup-name').value.trim();
             if (!name) return Gurasuraisu.showPopup('Please enter a name');
             if (!tempPfp) return Gurasuraisu.showPopup('Please choose a profile picture');
@@ -467,7 +526,7 @@
                 name: name,
                 pfp: tempPfp
             };
-            localStorage.setItem('messages_user', JSON.stringify(currentUser));
+            await setDB('state', 'currentUser', currentUser);
             setupScreen.style.display = 'none';
             bootstrap();
         });
@@ -480,8 +539,8 @@
             return result;
         }
 
-        function saveChats() { localStorage.setItem('messages_chats', JSON.stringify(chats)); }
-        function saveProfiles() { localStorage.setItem('messages_profiles', JSON.stringify(profiles)); }
+        async function saveChats() { await setDB('state', 'chats', chats); }
+        async function saveProfiles() { await setDB('state', 'profiles', profiles); }
 
         // --- Networking ---
         function initRooms() {
@@ -515,9 +574,9 @@
 
                 getChat((msg, peerId) => handleIncomingMessage(chatId, msg, peerId));
 
-                getProfile((profile, peerId) => {
+                getProfile(async (profile, peerId) => {
                     profiles[profile.id] = { name: profile.name, pfp: profile.pfp };
-                    saveProfiles();
+                    await saveProfiles();
                     if (currentChatId === chatId) renderMessages(chatId);
                 });
 
@@ -546,11 +605,11 @@
             document.getElementById('status-dot').classList.add('connected');
         }
 
-        function handleIncomingMessage(chatId, msg, peerId) {
-            const history = JSON.parse(localStorage.getItem(`messages_history_${chatId}`)) || [];
+        async function handleIncomingMessage(chatId, msg, peerId) {
+            const history = await getDB('messages', chatId) || [];
             if (!history.find(m => m.id === msg.id)) {
                 history.push(msg);
-                localStorage.setItem(`messages_history_${chatId}`, JSON.stringify(history));
+                await setDB('messages', chatId, history);
                 
                 if (currentChatId === chatId) {
                     appendMessageUI(msg);
@@ -602,12 +661,13 @@
             if (window.innerWidth > 800) messageInput.focus();
         }
 
-        function renderMessages(chatId) {
+        async function renderMessages(chatId) {
             chatMessages.innerHTML = '';
-            const history = JSON.parse(localStorage.getItem(`messages_history_${chatId}`)) || [];
+
+            const history = await getDB('messages', chatId) || [];
             
             if (history.length === 0) {
-                chatMessages.innerHTML = `<div style="text-align: center; opacity: 0.5; font-size: 0.85rem; margin-top: 20px;" id="empty-state">Start a conversation</div>`;
+                chatMessages.innerHTML = `<div style="text-align: center; font-size: 0.85rem; margin-top: 20px;" id="empty-state">Start a conversation</div>`;
             } else {
                 history.forEach(msg => appendMessageUI(msg));
             }
@@ -667,13 +727,16 @@
         }
 
         function scrollToBottom() {
-            requestAnimationFrame(() => {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            });
+            // Guaranteeing sufficient layout recalculation time
+            setTimeout(() => {
+                if (chatMessages) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight + 1000;
+                }
+            }, 50);
         }
 
         // --- Actions ---
-        function handleSend(text, imageBase64 = null) {
+        async function handleSend(text, imageBase64 = null) {
             if (!currentChatId || !activeRooms[currentChatId] || (!text && !imageBase64)) return;
             
             const msg = {
@@ -684,9 +747,9 @@
                 timestamp: Date.now()
             };
 
-            const history = JSON.parse(localStorage.getItem(`messages_history_${currentChatId}`)) || [];
+            const history = await getDB('messages', currentChatId) || [];
             history.push(msg);
-            localStorage.setItem(`messages_history_${currentChatId}`, JSON.stringify(history));
+            await setDB('messages', currentChatId, history);
 
             appendMessageUI(msg);
             Gurasuraisu.playSound('check');
@@ -712,29 +775,43 @@
             } catch(e) { console.error(e); }
         });
 
-        document.getElementById('create-chat-btn').addEventListener('click', async () => {
-            const name = await Gurasuraisu.showPrompt('Enter a name for this chat:', 'New Chat');
-            if (!name) return;
-            const newId = generateRandomString(8);
-            chats.push({ id: newId, name: name });
-            saveChats();
-            joinTrysteroRoom(newId);
-            renderChatList();
-            openChat(newId);
-            Gurasuraisu.showPopup(`Chat created! Invite code: ${newId}`);
-        });
+        async function handleJoinOrCreate() {
+            const input = document.getElementById('join-code-input').value.trim();
+            if (!input) return;
 
-        document.getElementById('join-chat-btn').addEventListener('click', () => {
-            const code = document.getElementById('join-code-input').value.trim();
-            if (!code) return Gurasuraisu.showPopup('Enter a valid code');
-            if (chats.find(c => c.id === code)) return openChat(code);
-            
-            chats.push({ id: code, name: `Chat ${code}` });
-            saveChats();
-            joinTrysteroRoom(code);
-            renderChatList();
-            openChat(code);
+            // Check if already joined by ID or exactly matching name
+            const existing = chats.find(c => c.id === input || c.name.toLowerCase() === input.toLowerCase());
+            if (existing) {
+                openChat(existing.id);
+                document.getElementById('join-code-input').value = '';
+                return;
+            }
+
+            // Decide based on exact 8-character alphanumeric heuristic
+            const isRoomId = /^[A-Za-z0-9]{8}$/.test(input);
+
+            if (isRoomId) {
+                chats.push({ id: input, name: `Chat ${input}` });
+                await saveChats();
+                joinTrysteroRoom(input);
+                renderChatList();
+                openChat(input);
+                Gurasuraisu.showPopup(`Joined chat: ${input}`);
+            } else {
+                const newId = generateRandomString(8);
+                chats.push({ id: newId, name: input });
+                await saveChats();
+                joinTrysteroRoom(newId);
+                renderChatList();
+                openChat(newId);
+                Gurasuraisu.showPopup(`Chat created! Invite code: ${newId}`);
+            }
             document.getElementById('join-code-input').value = '';
+        }
+
+        document.getElementById('join-create-chat-btn').addEventListener('click', handleJoinOrCreate);
+        document.getElementById('join-code-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleJoinOrCreate();
         });
 
         document.addEventListener('DOMContentLoaded', bootstrap);
