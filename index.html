@@ -1375,7 +1375,7 @@
             } else {
                 chatId = generateRandomString(8);
                 chatName = input;
-                chatPass = await Gurasuraisu.showPrompt('Set a password for this group (optional):', '');
+                chatPass = await Gurasuraisu.showPrompt('Set a password for this group (optional):', 'Creating chat');
             }
 
             chats.push({ id: chatId, name: chatName, password: chatPass });
