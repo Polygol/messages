@@ -1005,7 +1005,7 @@
             scrollToBottom();
         }
 
-        function appendMessageUI(msg) {
+        function appendMessageUI(msg, isNew = false) {
             const emptyState = document.getElementById('empty-state');
             if (emptyState) emptyState.remove();
 
