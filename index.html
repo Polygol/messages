@@ -904,7 +904,7 @@
         window.cancelReply = cancelReply;
 
         async function addReaction(msg) {
-            const emoji = await Gurasuraisu.showPrompt('Enter an emoji to react with', '❤️');
+            const emoji = await Gurasuraisu.showPrompt('Enter an emoji to react with:', 'React', '👍');
             if (!emoji) return;
             
             const localHistory = await getDB('messages', currentChatId) || [];
