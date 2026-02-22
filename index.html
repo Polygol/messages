@@ -163,10 +163,6 @@
             border: 1px solid var(--glass-border);
         }
 
-        .message-bubble.new-arrival {
-            margin-bottom: 60px;
-        }
-
         .reply-banner {
             font-size: 0.75rem;
             opacity: 0.7;
@@ -1006,13 +1002,13 @@
             scrollToBottom();
         }
 
-        function appendMessageUI(msg, isNew = false) {
+        function appendMessageUI(msg) {
             const emptyState = document.getElementById('empty-state');
             if (emptyState) emptyState.remove();
 
             const isMine = msg.senderId === currentUser.id;
             const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${isMine ? 'mine' : 'theirs'} ${isNew ? 'new-arrival' : ''}`;
+            bubble.className = `message-bubble ${isMine ? 'mine' : 'theirs'}`;
 
             let startX = 0, currentX = 0;
             bubble.addEventListener('touchstart', (e) => {
