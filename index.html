@@ -154,6 +154,11 @@
             background-color: var(--search-background);
             border-bottom-left-radius: 20px;
         }
+
+        .message-bubble.highlight {
+            background-color: var(--tonal)
+            outline: 2px solid var(--text-color);
+        }
         
         .message-image {
             max-width: 100%;
@@ -1055,8 +1060,9 @@
 
             const isMine = msg.senderId === currentUser.id;
             const bubble = document.createElement('div');
+            bubble.id = 'msg-' + msg.id;
             bubble.className = `message-bubble ${isMine ? 'mine' : 'theirs'}`;
-
+            
             let startX = 0, currentX = 0;
             bubble.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
@@ -1084,7 +1090,20 @@
             if (msg.replyTo) {
                 const replyBanner = document.createElement('div');
                 replyBanner.className = 'reply-banner';
+                replyBanner.style.cursor = 'pointer';
                 replyBanner.textContent = `Replying to ${msg.replyTo.senderName}: ${msg.replyTo.text}`;
+                
+                replyBanner.onclick = (e) => {
+                    e.stopPropagation();
+                    const target = document.getElementById('msg-' + msg.replyTo.id);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        target.classList.add('highlight');
+                        setTimeout(() => target.classList.remove('highlight'), 1000);
+                    } else {
+                        Gurasuraisu.showPopup("Original message not found in history");
+                    }
+                };
                 bubble.appendChild(replyBanner);
             }
 
@@ -1164,18 +1183,7 @@
         }
 
         function scrollToBottom() {
-            setTimeout(() => {
-                if (chatMessages && chatMessages.lastElementChild) {
-                    // Uses 'nearest' with CSS scroll-margin to prevent viewport over-scrolling
-                    chatMessages.lastElementChild.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'nearest',
-                        inline: 'start'
-                    });
-                } else if (chatMessages) {
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                }
-            }, 50);
+            window.scrollTo(0, document.body.scrollHeight);
         }
         
         // --- Actions ---
