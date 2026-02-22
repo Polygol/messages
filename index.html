@@ -215,6 +215,28 @@
             z-index: 5;
         }
 
+        .typing-indicator-pill {
+            position: fixed;
+            bottom: 95px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--search-background);
+            border: 1px solid var(--glass-border);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            backdrop-filter: var(--edge-refraction-filter);
+            box-shadow: var(--sun-shadow);
+            z-index: 9;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .typing-indicator-pill.visible {
+            opacity: 1;
+        }
+
         .sender-row {
             display: flex;
             align-items: center;
@@ -423,6 +445,7 @@
             </div>
             
             <div class="input-section">
+                <div id="typing-indicator" class="typing-indicator-pill">Typing...</div>
                 <div id="replying-to-indicator">
                     <span id="replying-to-text" style="overflow:hidden; text-overflow:ellipsis;">Replying</span>
                     <span class="material-symbols-rounded" style="font-size: 14px; cursor:pointer;" onclick="cancelReply()">close</span>
@@ -626,10 +649,12 @@
                 const [sendProfile, getProfile] = room.makeAction('profile');
                 const [sendHistory, getHistory] = room.makeAction('history');
                 const [sendReaction, getReaction] = room.makeAction('reaction');
+                const [sendTyping, getTyping] = room.makeAction('typing');
 
-                activeRooms[chatId] = { room, sendChat, sendProfile, sendHistory, sendReaction };
+                activeRooms[chatId] = { room, sendChat, sendProfile, sendHistory, sendReaction, sendTyping };
 
                 getChat((msg, peerId) => handleIncomingMessage(chatId, msg, peerId));
+                getTyping((isTyping, peerId) => handleTyping(chatId, peerId, isTyping));
 
                 getProfile(async (profile, peerId) => {
                     profiles[profile.id] = { name: profile.name, pfp: profile.pfp };
@@ -703,6 +728,44 @@
 
         let lastNotifTime = 0;
         let recentMessages = [];
+        let typingTimers = {};
+        let currentlyTyping = {};
+        
+        function handleTyping(chatId, peerId, isTyping) {
+            if (!currentlyTyping[chatId]) currentlyTyping[chatId] = new Set();
+            
+            if (isTyping) {
+                currentlyTyping[chatId].add(peerId);
+                
+                // Auto-clear after 5 seconds if no 'false' is received
+                if (typingTimers[`${chatId}_${peerId}`]) clearTimeout(typingTimers[`${chatId}_${peerId}`]);
+                typingTimers[`${chatId}_${peerId}`] = setTimeout(() => handleTyping(chatId, peerId, false), 5000);
+            } else {
+                currentlyTyping[chatId].delete(peerId);
+            }
+            
+            updateTypingUI(chatId);
+        }
+        
+        function updateTypingUI(chatId) {
+            if (currentChatId !== chatId) return;
+            
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (!currentlyTyping[chatId] || currentlyTyping[chatId].size === 0) {
+                typingIndicator.classList.remove('visible');
+                return;
+            }
+            
+            const typists = Array.from(currentlyTyping[chatId]).map(id => profiles[id] ? profiles[id].name.split(' ')[0] : 'Someone');
+            
+            let text = '';
+            if (typists.length === 1) text = `${typists[0]} is typing...`;
+            else if (typists.length === 2) text = `${typists[0]}, ${typists[1]} are typing...`;
+            else text = 'Multiple people are typing...';
+            
+            typingIndicator.textContent = text;
+            typingIndicator.classList.add('visible');
+        }
 
         async function handleIncomingMessage(chatId, msg, peerId) {
             // Migrate old chat history specifically off localStorage
@@ -807,9 +870,10 @@
             document.getElementById('chat-content').classList.add('active');
             
             renderMessages(chatId);
+            updateTypingUI(chatId);
             if (window.innerWidth > 800) messageInput.focus();
         }
-
+        
         async function renderMessages(chatId) {
             chatMessages.innerHTML = '';
 
@@ -849,8 +913,8 @@
                 bubble.style.transform = '';
                 if (startX && currentX) {
                     let diff = currentX - startX;
-                    if (diff > 80) addReaction(msg);        // Swipe Right
-                    else if (diff < -80) setReply(msg);     // Swipe Left
+                    if (diff > 80) setReply(msg);           // Swipe Right
+                    else if (diff < -80) addReaction(msg);  // Swipe Left
                 }
                 startX = 0; currentX = 0;
             });
@@ -916,10 +980,13 @@
 
         function scrollToBottom() {
             setTimeout(() => {
-                if (chatMessages) {
+                if (chatMessages && chatMessages.lastElementChild) {
+                    // Reliably scrolls the container to the very last message bubble
+                    chatMessages.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } else if (chatMessages) {
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
-            }, 50);
+            }, 100); // 100ms ensures DOM layout is fully calculated first
         }
         
         // --- Actions ---
@@ -1016,10 +1083,37 @@
             if (window.innerWidth > 800) messageInput.focus();
         }
 
-        sendBtn.addEventListener('click', () => handleSend(messageInput.value.trim()));
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSend(messageInput.value.trim());
+        let localTypingTimer = null;
+        function broadcastTyping(isTyping) {
+            if (currentChatId && activeRooms[currentChatId] && activeRooms[currentChatId].sendTyping) {
+                activeRooms[currentChatId].sendTyping(isTyping);
+            }
+        }
+
+        sendBtn.addEventListener('click', () => {
+            broadcastTyping(false);
+            handleSend(messageInput.value.trim());
         });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                broadcastTyping(false);
+                if (localTypingTimer) clearTimeout(localTypingTimer);
+                handleSend(messageInput.value.trim());
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            if (messageInput.value.trim().length > 0) {
+                broadcastTyping(true);
+                if (localTypingTimer) clearTimeout(localTypingTimer);
+                localTypingTimer = setTimeout(() => broadcastTyping(false), 3000);
+            } else {
+                broadcastTyping(false);
+            }
+        });
+        
+        messageInput.addEventListener('blur', () => broadcastTyping(false));
 
         attachBtn.addEventListener('click', async () => {
             try {
