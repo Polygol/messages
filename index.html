@@ -1165,12 +1165,16 @@
         function scrollToBottom() {
             setTimeout(() => {
                 if (chatMessages && chatMessages.lastElementChild) {
-                    // Reliably scrolls the container to the very last message bubble
-                    chatMessages.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    // Uses 'nearest' with CSS scroll-margin to prevent viewport over-scrolling
+                    chatMessages.lastElementChild.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest',
+                        inline: 'start'
+                    });
                 } else if (chatMessages) {
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
-            }, 100); // 100ms ensures DOM layout is fully calculated first
+            }, 50);
         }
         
         // --- Actions ---
