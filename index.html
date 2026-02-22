@@ -614,8 +614,7 @@
                 } else {
                     const sender = profiles[msg.senderId] ? profiles[msg.senderId].name : 'Someone';
                     const chatName = chats.find(c => c.id === chatId)?.name || 'Chat';
-                    Gurasuraisu.showNotification(`Message in ${chatName}`, { heading: sender });
-                    Gurasuraisu.playSound('success');
+                    Gurasuraisu.showNotification(`New message in ${chatName}`, { heading: sender, icon: 'chat' });
                 }
             }
         }
