@@ -202,6 +202,8 @@
             border-radius: 35px;
             corner-shape: superellipse(1.5);
             margin-bottom: 8px;
+            gap: 14px;
+            transition: all 0.3s cubic-bezier(.2, 1.3, .64, 1);
         }
         
         .chat-item:active {
@@ -267,8 +269,7 @@
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
-            font-weight: 600;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--transparent-color);
             align-self: flex-start;
         }
 
@@ -307,23 +308,6 @@
         @keyframes popIn {
             from { opacity: 0; transform: scale(0.9) translateY(10px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        button, .tab-btn {
-            transform: scale(1);
-            transition: all 0.15s cubic-bezier(0.2, 0, 0.38, 0.9);
-        }
-
-        button:active, .tab-btn:active {
-            transform: scale(1.1);
-            filter: brightness(1.5);
-        }
-        
-        .reduce-animations button:active,
-        .reduce-animations .tab-btn:active {
-           transform: scale(1) !important;
-           transition: none !important;
-           filter: brightness(1.5) !important;
         }
     </style>
 </head>
@@ -639,9 +623,9 @@
                 item.className = 'chat-item';
                 item.innerHTML = `
                     <div class="chat-icon">${chat.name.charAt(0).toUpperCase()}</div>
-                    <div style="flex-grow: 1;">
-                        <div style="font-weight: 600;">${chat.name}</div>
-                        <div style="font-size: 0.8rem; opacity: 0.6;">Code: ${chat.id}</div>
+                    <div style="flex-grow: 1; gap: 4px;">
+                        <div style="font-weight: 600; font-family: 'Open Runde', sans-serif;">${chat.name}</div>
+                        <div style="color: var(--secondary-color)">${chat.id}</div>
                     </div>
                 `;
                 item.addEventListener('click', () => openChat(chat.id));
