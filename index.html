@@ -184,7 +184,8 @@
             right: 10px;
             display: flex;
             gap: 4px;
-            background: var(--search-background);
+            background: var(--accent);
+            color: var(--background-color);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             padding: 2px 6px;
@@ -700,7 +701,17 @@
             document.getElementById('status-dot').classList.add('connected');
         }
 
+        let lastNotifTime = 0;
+        let recentMessages = [];
+
         async function handleIncomingMessage(chatId, msg, peerId) {
+            // Migrate old chat history specifically off localStorage
+            if (localStorage.getItem(`messages_history_${chatId}`)) {
+                const oldHist = JSON.parse(localStorage.getItem(`messages_history_${chatId}`));
+                await setDB('messages', chatId, oldHist);
+                localStorage.removeItem(`messages_history_${chatId}`);
+            }
+
             const history = await getDB('messages', chatId) || [];
             if (!history.find(m => m.id === msg.id)) {
                 history.push(msg);
@@ -709,9 +720,35 @@
                 if (currentChatId === chatId) {
                     appendMessageUI(msg);
                 } else {
-                    const sender = profiles[msg.senderId] ? profiles[msg.senderId].name : 'Someone';
-                    const chatName = chats.find(c => c.id === chatId)?.name || 'Chat';
-                    Gurasuraisu.showNotification(`New message in ${chatName}`, { heading: sender, icon: 'chat' });
+                    const now = Date.now();
+                    
+                    // --- Spam Detection & Cooldown ---
+                    // Keep messages from the last 15 seconds
+                    recentMessages = recentMessages.filter(m => now - m.timestamp < 15000);
+                    
+                    const isImage = !!msg.imageBase64;
+                    const isShort = msg.text && msg.text.trim().length <= 3;
+                    
+                    recentMessages.push({ timestamp: now, isImage, isShort });
+                    
+                    const imageCount = recentMessages.filter(m => m.isImage).length;
+                    const shortCount = recentMessages.filter(m => m.isShort).length;
+                    const msgCount = recentMessages.length;
+                    
+                    // Spam Heuristics: > 2 images recently, > 3 short messages, or > 5 messages in general
+                    const isSpam = imageCount > 2 || shortCount > 3 || msgCount > 5;
+                    
+                    // 3-second global notification cooldown
+                    const onCooldown = (now - lastNotifTime) < 3000; 
+
+                    if (!isSpam && !onCooldown) {
+                        lastNotifTime = now;
+                        const sender = profiles[msg.senderId] ? profiles[msg.senderId].name : 'Someone';
+                        const chatName = chats.find(c => c.id === chatId)?.name || 'Chat';
+                        const contentPreview = msg.text ? msg.text : '📷 Image';
+                        
+                        Gurasuraisu.showNotification(contentPreview, { heading: `${sender} • ${chatName}`, icon: 'chat' });
+                    }
                 }
             }
         }
@@ -904,7 +941,7 @@
         window.cancelReply = cancelReply;
 
         async function addReaction(msg) {
-            const emoji = await Gurasuraisu.showPrompt('Enter an emoji to react with:', 'React', '👍');
+            const emoji = await Gurasuraisu.showPrompt('Enter something to react with:', 'React to Message', '👍');
             if (!emoji) return;
             
             const localHistory = await getDB('messages', currentChatId) || [];
