@@ -499,7 +499,10 @@
                     appendMessage(msg.text, senderName, false);
                     
                     // Notification Logic
-                    Gurasuraisu.playSound('popup');
+                    if document.hasFocus() {
+                        Gurasuraisu.playSound('popup');
+                    }
+                    
                     if (!document.hasFocus()) {
                         Gurasuraisu.showNotification(`New message`, {
                             heading: '${senderName}',
