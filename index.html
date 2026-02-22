@@ -195,6 +195,41 @@
             z-index: 5;
         }
 
+        /* Poll Styling */
+        .poll-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+            min-width: 200px;
+        }
+        .poll-option {
+            position: relative;
+            background: var(--background-color-tr);
+            border: 1px solid var(--glass-border);
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            overflow: hidden;
+            font-size: 0.9rem;
+        }
+        .poll-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--accent);
+            opacity: 0.2;
+            transition: width 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .poll-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
         #replying-to-indicator {
             position: absolute;
             top: -45px;
@@ -388,6 +423,18 @@
             box-shadow: var(--sun-shadow);
         }
 
+        /* Settings UI */
+        .profile-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: var(--search-background);
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+        }
+
         /* Animations */
         @keyframes popIn {
             from { opacity: 0; transform: scale(0.9) translateY(10px); }
@@ -413,6 +460,7 @@
         <div class="toolbar">
             <button class="tab-btn active" data-tab="chats"><span class="material-symbols-rounded">home</span>Home</button>
             <button class="tab-btn" data-tab="chat" id="tab-btn-chat" style="display:none;"><span class="material-symbols-rounded">chat</span>Chat</button>
+            <button class="tab-btn" data-tab="profile"><span class="material-symbols-rounded">account_circle</span>You</button>
         </div>
         
         <!-- Chats List Tab -->
@@ -451,8 +499,19 @@
                     <span class="material-symbols-rounded" style="font-size: 14px; cursor:pointer;" onclick="cancelReply()">close</span>
                 </div>
                 <input type="text" class="chat-input" id="message-input" placeholder="Type a message" autocomplete="off">
-                <button class="add-btn hide-on-focus" id="attach-btn" style="margin-right: 15px;"><span class="material-symbols-rounded">filter_vintage</span></button>
+                <button class="add-btn" id="poll-btn" style="margin-right: 15px;"><span class="material-symbols-rounded">thumbs_up_double</span></button>
+                <button class="add-btn" id="attach-btn" style="margin-right: 15px;"><span class="material-symbols-rounded">filter_vintage</span></button>
                 <button class="add-btn" id="send-btn"><span class="material-symbols-rounded">arrow_upward</span></button>
+            </div>
+        </div>
+
+        <!-- Profile/Settings Tab -->
+        <div class="tab-content" id="profile-content">
+            <div class="profile-card">
+                <div id="settings-pfp-preview" style="width:100px; height:100px; border-radius:50%; background-size:cover; background-position:center; cursor:pointer; border: 2px solid var(--glass-border);"></div>
+                <input type="text" id="settings-name-input" class="form-input" style="width:100%; text-align:center;" placeholder="Your Display Name">
+                <button id="save-profile-btn" class="add-btn" style="width:100%; background:var(--accent); color:var(--background-color);">Save</button>
+                <div style="font-size: 0.7rem; opacity: 0.5; margin-top: 10px;">Your unique ID: <span id="my-internal-id">...</span></div>
             </div>
         </div>
     </div>
@@ -575,6 +634,7 @@
                 return;
             }
             initRooms();
+            updateProfileUI();
         }
 
         // --- Setup Logic ---
@@ -608,6 +668,29 @@
             setupScreen.style.display = 'none';
             initialize();
         });
+
+        // --- Image Compression ---
+        async function compressImage(dataUrl) {
+            if (dataUrl.startsWith('data:image/gif') || dataUrl.startsWith('data:image/webp')) return dataUrl;
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max = 1200;
+                    if (width > max || height > max) {
+                        if (width > height) { height *= max / width; width = max; }
+                        else { width *= max / height; height = max; }
+                    }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.src = dataUrl;
+            });
+        }
 
         // --- Utility ---
         function generateRandomString(length) {
@@ -650,18 +733,17 @@
                 const [sendHistory, getHistory] = room.makeAction('history');
                 const [sendReaction, getReaction] = room.makeAction('reaction');
                 const [sendTyping, getTyping] = room.makeAction('typing');
+                const [sendVote, getVote] = room.makeAction('pollVote');
 
-                activeRooms[chatId] = { room, sendChat, sendProfile, sendHistory, sendReaction, sendTyping };
+                activeRooms[chatId] = { room, sendChat, sendProfile, sendHistory, sendReaction, sendTyping, sendVote };
 
                 getChat((msg, peerId) => handleIncomingMessage(chatId, msg, peerId));
                 getTyping((isTyping, peerId) => handleTyping(chatId, peerId, isTyping));
-
                 getProfile(async (profile, peerId) => {
                     profiles[profile.id] = { name: profile.name, pfp: profile.pfp };
                     await saveProfiles();
                     if (currentChatId === chatId) renderMessages(chatId);
                 });
-
                 getHistory(async (peerHistory, peerId) => {
                     const localHistory = await getDB('messages', chatId) || [];
                     const historyMap = new Map(localHistory.map(m => [m.id, m]));
@@ -686,13 +768,22 @@
                         if (currentChatId === chatId) renderMessages(chatId);
                     }
                 });
-
                 getReaction(async (data, peerId) => {
                     const localHistory = await getDB('messages', chatId) || [];
                     const msg = localHistory.find(m => m.id === data.messageId);
                     if (msg) {
                         if (!msg.reactions) msg.reactions = {};
                         msg.reactions[data.senderId] = data.emoji;
+                        await setDB('messages', chatId, localHistory);
+                        if (currentChatId === chatId) renderMessages(chatId);
+                    }
+                });
+                getVote(async (data, peerId) => {
+                    const localHistory = await getDB('messages', chatId) || [];
+                    const msg = localHistory.find(m => m.id === data.msgId);
+                    if (msg && msg.poll) {
+                        if (!msg.poll.votes) msg.poll.votes = {};
+                        msg.poll.votes[data.userId] = data.optionIdx;
                         await setDB('messages', chatId, localHistory);
                         if (currentChatId === chatId) renderMessages(chatId);
                     }
@@ -813,6 +904,33 @@
                         Gurasuraisu.showNotification(contentPreview, { heading: `${sender} • ${chatName}`, icon: 'chat' });
                     }
                 }
+            }
+        }
+
+        document.getElementById('poll-btn').addEventListener('click', async () => {
+            const question = await Gurasuraisu.showPrompt('Poll question:', 'Poll');
+            if (!question) return;
+            const optsRaw = await Gurasuraisu.showPrompt('Options (comma separated):', 'Poll');
+            if (!optsRaw) return;
+            const options = optsRaw.split(',').map(s => s.trim());
+            handleSend(null, null, { question, options, votes: {} });
+        });
+
+        async function castVote(msgId, optionIdx) {
+            if (!currentChatId || !activeRooms[currentChatId]) return;
+            
+            // Broadcast to peers
+            activeRooms[currentChatId].sendVote({ msgId, optionIdx, userId: currentUser.id });
+            
+            // Update local state
+            const localHistory = await getDB('messages', currentChatId) || [];
+            const msg = localHistory.find(m => m.id === msgId);
+            if (msg && msg.poll) {
+                if (!msg.poll.votes) msg.poll.votes = {};
+                msg.poll.votes[currentUser.id] = optionIdx;
+                await setDB('messages', currentChatId, localHistory);
+                renderMessages(currentChatId);
+                Gurasuraisu.playSound('select');
             }
         }
 
@@ -960,6 +1078,29 @@
                 bubble.appendChild(imgEl);
             }
 
+            if (msg.poll) {
+                const pollBox = document.createElement('div');
+                pollBox.className = 'poll-container';
+                const totalVotes = msg.poll.votes ? Object.keys(msg.poll.votes).length : 0;
+
+                msg.poll.options.forEach((opt, idx) => {
+                    const optBtn = document.createElement('div');
+                    optBtn.className = 'poll-option';
+                    const voteCount = msg.poll.votes ? Object.values(msg.poll.votes).filter(v => v === idx).length : 0;
+                    const pct = totalVotes === 0 ? 0 : (voteCount / totalVotes) * 100;
+
+                    optBtn.innerHTML = `<div class="poll-bar" style="width:${pct}%"></div><span>${opt}</span>`;
+                    optBtn.onclick = () => castVote(msg.id, idx);
+                    pollBox.appendChild(optBtn);
+                });
+
+                const stats = document.createElement('div');
+                stats.className = 'poll-stats';
+                stats.innerHTML = `<span>${msg.poll.question}</span><span>${totalVotes} votes</span>`;
+                pollBox.appendChild(stats);
+                bubble.appendChild(pollBox);
+            }
+
             const timeEl = document.createElement('div');
             timeEl.className = 'message-time';
             const date = new Date(msg.timestamp);
@@ -1053,14 +1194,20 @@
         }
 
         // --- Core Actions ---
-        async function handleSend(text, imageBase64 = null) {
-            if (!currentChatId || !activeRooms[currentChatId] || (!text && !imageBase64)) return;
+        async function handleSend(text, imageBase64 = null, pollData = null) {
+            if (!currentChatId || !activeRooms[currentChatId] || (!text && !imageBase64 && !pollData)) return;
             
+            let processedImage = imageBase64;
+            if (imageBase64) {
+                processedImage = await compressImage(imageBase64);
+            }
+
             const msg = {
                 id: 'msg_' + generateRandomString(12),
                 senderId: currentUser.id,
                 text: text,
-                imageBase64: imageBase64,
+                imageBase64: processedImage,
+                poll: pollData,
                 timestamp: Date.now(),
                 replyTo: replyingToMsg ? {
                     id: replyingToMsg.id,
@@ -1125,37 +1272,58 @@
                 }
             } catch(e) { console.error(e); }
         });
+
+        // Profile Tab Sync
+        function updateProfileUI() {
+            if (!currentUser) return;
+            document.getElementById('settings-name-input').value = currentUser.name;
+            document.getElementById('settings-pfp-preview').style.backgroundImage = `url(${currentUser.pfp})`;
+            document.getElementById('my-internal-id').textContent = currentUser.id;
+        }
+
+        document.getElementById('settings-pfp-preview').addEventListener('click', async () => {
+            const files = await Gurasuraisu.requestFile({ accept: 'image/*', multiple: false });
+            if (files && files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('settings-pfp-preview').style.backgroundImage = `url(${e.target.result})`;
+                    currentUser.pfp = e.target.result;
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        });
+
+        document.getElementById('save-profile-btn').addEventListener('click', async () => {
+            currentUser.name = document.getElementById('settings-name-input').value.trim() || currentUser.name;
+            await setDB('state', 'currentUser', currentUser);
+            profiles[currentUser.id] = { name: currentUser.name, pfp: currentUser.pfp };
+            await saveProfiles();
+            Gurasuraisu.showPopup('Profile updated');
+            Object.values(activeRooms).forEach(r => r.sendProfile({ id: currentUser.id, name: currentUser.name, pfp: currentUser.pfp }));
+        });
         
         async function handleJoinOrCreate() {
             const input = document.getElementById('join-code-input').value.trim();
             if (!input) return;
 
-            // Check if already joined by ID or exactly matching name
             const existing = chats.find(c => c.id === input || c.name.toLowerCase() === input.toLowerCase());
-            if (existing) {
-                openChat(existing.id);
-                document.getElementById('join-code-input').value = '';
-                return;
-            }
+            if (existing) { openChat(existing.id); document.getElementById('join-code-input').value = ''; return; }
 
-            // Decide based on exact 8-character alphanumeric heuristic
             const isRoomId = /^[A-Za-z0-9]{8}$/.test(input);
-
             if (isRoomId) {
-                chats.push({ id: input, name: `Chat ${input}` });
+                const pass = await Gurasuraisu.showPrompt('Enter chat password (if any) or leave blank:', 'Password');
+                chats.push({ id: input, name: `Chat ${input}`, password: pass });
                 await saveChats();
                 joinTrysteroRoom(input);
-                renderChatList();
-                openChat(input);
-                Gurasuraisu.showPopup(`Joined chat ${input}`);
+                renderChatList(); openChat(input);
             } else {
+                const pass = await Gurasuraisu.showPrompt('Set a password for this new chat (optional):', 'Password');
                 const newId = generateRandomString(8);
-                chats.push({ id: newId, name: input });
+                chats.push({ id: newId, name: input, password: pass });
                 await saveChats();
                 joinTrysteroRoom(newId);
-                renderChatList();
-                openChat(newId);
-                Gurasuraisu.showPopup(`Chat ${newId} created`);
+                renderChatList(); openChat(newId);
+                Gurasuraisu.showPopup(`Created chat ${newId}`);
             }
             document.getElementById('join-code-input').value = '';
         }
