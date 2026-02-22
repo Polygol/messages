@@ -727,7 +727,7 @@
         async function joinTrysteroRoom(chatId) {
             if (activeRooms[chatId]) return;
             const chatObj = chats.find(c => c.id === chatId);
-            const password = chatObj ? chatObj.password : '';
+            const password = (chatObj && chatObj.password) ? chatObj.password : '';
             
             // Derive a room ID that is impossible to join without the password
             const secureId = await getSecureRoomId(chatId, password);
@@ -763,11 +763,12 @@
                     handleIncomingMessage(chatId, msg, peerId);
                 });
                 getProfile(async (profile, peerId) => {
-                    // Password check is now dual-layered:
-                    // 1. Swarm isolation (Secure Room ID)
-                    // 2. Peer-level validation
-                    if (profile.password !== password) {
-                        console.warn(`Peer ${peerId} rejected: Incorrect password.`);
+                    // Normalize both to empty strings to prevent null/undefined mismatches
+                    const peerPass = profile.password || '';
+                    const localPass = password || '';
+
+                    if (peerPass !== localPass) {
+                        console.warn(`Peer ${peerId} rejected: Password mismatch.`);
                         return;
                     }
                     authorizedPeers.add(peerId);
@@ -833,7 +834,7 @@
                         id: currentUser.id, 
                         name: currentUser.name, 
                         pfp: currentUser.pfp,
-                        password: password 
+                        password: password || '' 
                     }, peerId);
 
                     if (currentChatId === chatId) updatePeerCount();
