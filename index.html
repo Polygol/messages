@@ -480,7 +480,7 @@
             profiles = await getDB('state', 'profiles') || {};
         }
 
-        async function bootstrap() {
+        async function initialize() {
             await initDB();
             await loadState();
 
@@ -528,7 +528,7 @@
             };
             await setDB('state', 'currentUser', currentUser);
             setupScreen.style.display = 'none';
-            bootstrap();
+            initialize();
         });
 
         // --- Utility ---
@@ -727,14 +727,15 @@
         }
 
         function scrollToBottom() {
-            // Guaranteeing sufficient layout recalculation time
             setTimeout(() => {
-                if (chatMessages) {
-                    chatMessages.scrollTop = chatMessages.scrollHeight + 1000;
+                if (chatMessages && chatMessages.lastElementChild) {
+                    chatMessages.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } else if (chatMessages) {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
-            }, 50);
+            }, 100);
         }
-
+        
         // --- Actions ---
         async function handleSend(text, imageBase64 = null) {
             if (!currentChatId || !activeRooms[currentChatId] || (!text && !imageBase64)) return;
@@ -814,7 +815,7 @@
             if (e.key === 'Enter') handleJoinOrCreate();
         });
 
-        document.addEventListener('DOMContentLoaded', bootstrap);
+        document.addEventListener('DOMContentLoaded', initialize);
     </script>
 </body>
 </html>
