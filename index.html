@@ -523,8 +523,8 @@
 
         document.getElementById('finish-setup-btn').addEventListener('click', async () => {
             const name = document.getElementById('setup-name').value.trim();
-            if (!name) return Gurasuraisu.showPopup('Please enter a name');
-            if (!tempPfp) return Gurasuraisu.showPopup('Please choose a profile picture');
+            if (!name) return Gurasuraisu.showPopup('Enter a name');
+            if (!tempPfp) return Gurasuraisu.showPopup('Choose a profile picture');
 
             currentUser = {
                 id: 'user_' + generateRandomString(16),
@@ -802,7 +802,7 @@
                 joinTrysteroRoom(input);
                 renderChatList();
                 openChat(input);
-                Gurasuraisu.showPopup(`Joined chat: ${input}`);
+                Gurasuraisu.showPopup(`Joined chat ${input}`);
             } else {
                 const newId = generateRandomString(8);
                 chats.push({ id: newId, name: input });
@@ -810,7 +810,7 @@
                 joinTrysteroRoom(newId);
                 renderChatList();
                 openChat(newId);
-                Gurasuraisu.showPopup(`Chat created! Invite code: ${newId}`);
+                Gurasuraisu.showPopup(`Chat ${newId} created`);
             }
             document.getElementById('join-code-input').value = '';
         }
