@@ -344,11 +344,8 @@
         
         <!-- Chats List Tab -->
         <div class="tab-content active" id="chats-content">
-            <div class="settings-form" style="margin-bottom: 20px;">
-                <h3>Your Chats</h3>
-                <div id="chat-list-container" class="peer-list">
-                    <div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No chats yet</div>
-                </div>
+            <div id="chat-list-container" class="peer-list">
+                <div style="font-size: 0.85rem; padding: 10px;">Start a conversation</div>
             </div>
             <div class="settings-form">
                 <h3>Join or Create a Chat</h3>
@@ -359,7 +356,6 @@
                         <button id="join-chat-btn" class="add-btn" style="padding:12px 20px;">Join</button>
                     </div>
                 </div>
-                <div style="text-align:center; margin:10px 0; opacity:0.5;">or</div>
                 <button id="create-chat-btn" class="add-btn" style="width:100%; border-radius:25px; background:var(--accent); color:var(--background-color);">Start New Chat</button>
             </div>
         </div>
@@ -368,7 +364,6 @@
         <div class="tab-content" id="chat-content">
             <div class="chat-header" id="chat-header" style="padding: 10px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--glass-border); margin-bottom:10px; justify-content: space-between;">
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <button class="add-btn" id="back-to-chats-btn" style="padding:8px;"><span class="material-symbols-rounded">arrow_back</span></button>
                     <h3 id="current-chat-title" style="margin:0; font-family:'Open Runde', sans-serif;">Select a chat</h3>
                 </div>
                 <div class="status-badge" id="connection-status">
@@ -547,7 +542,7 @@
                 countStr = `${count} online`;
             }
             
-            document.getElementById('status-text').textContent = `Code: ${currentChatId} • ${countStr}`;
+            document.getElementById('status-text').textContent = `${currentChatId} • ${countStr}`;
             document.getElementById('status-dot').classList.add('connected');
         }
 
@@ -606,10 +601,6 @@
             renderMessages(chatId);
             if (window.innerWidth > 800) messageInput.focus();
         }
-
-        document.getElementById('back-to-chats-btn').addEventListener('click', () => {
-            tabButtons[0].click();
-        });
 
         function renderMessages(chatId) {
             chatMessages.innerHTML = '';
