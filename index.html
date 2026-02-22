@@ -154,13 +154,26 @@
             background-color: var(--search-background);
             border-bottom-left-radius: 20px;
         }
+        
+        .message-image {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 5px;
+        }
 
-        .message-sender {
-            font-size: 0.75rem;
-            font-weight: 600;
+        .sender-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-bottom: 4px;
-            opacity: 0.8;
-            font-family: 'Open Runde', sans-serif;
+        }
+
+        .sender-pfp {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
         }
 
         .message-text {
@@ -174,6 +187,37 @@
             align-self: flex-end;
             margin-top: 4px;
             opacity: 0.6;
+        }
+
+        /* --- Chats List --- */
+        .chat-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background-color: var(--background-color-tr);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        
+        .chat-item:active {
+            transform: scale(0.98);
+            background-color: var(--search-background);
+        }
+
+        .chat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            color: var(--background-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
         }
 
         /* --- Room Settings --- */
@@ -280,68 +324,82 @@
 </head>
 <body data-app-name="MESSAGES">
     <div class="container">
+    <!-- Setup Screen (Overlay) -->
+    <div id="setup-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--background-color-tr); backdrop-filter: var(--edge-refraction-filter); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+        <h2 style="margin-bottom:20px;">Polygol Messages</h2>
+        <div id="pfp-preview" style="width:120px; height:120px; border-radius:50%; background:var(--search-background); margin-bottom:20px; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="document.getElementById('upload-pfp-btn').click()">
+            <span class="material-symbols-rounded" style="font-size:40px; opacity:0.5;">add_a_photo</span>
+        </div>
+        <button id="upload-pfp-btn" class="add-btn" style="margin-bottom:20px;">Add a picture</button>
+        <input type="text" id="setup-name" class="form-input" placeholder="Name" style="width:100%; max-width:300px; margin-bottom:20px; text-align:center;">
+        <button id="finish-setup-btn" class="add-btn" style="width:100%; max-width:300px; background:var(--accent); color:var(--background-color);">Get Started</button>
+    </div>
+
+    <div class="container">
         <!-- Toolbar -->
         <div class="toolbar">
-            <button class="tab-btn active" data-tab="chat"><span class="material-symbols-rounded">chat</span>Chat</button>
-            <button class="tab-btn" data-tab="room"><span class="material-symbols-rounded">cell_tower</span>Network</button>
+            <button class="tab-btn active" data-tab="chats"><span class="material-symbols-rounded">home</span>Home</button>
+            <button class="tab-btn" data-tab="chat" id="tab-btn-chat" style="display:none;"><span class="material-symbols-rounded">chat</span>Chat</button>
         </div>
         
-        <!-- Chat Tab -->
-        <div class="tab-content active" id="chat-content">
+        <!-- Chats List Tab -->
+        <div class="tab-content active" id="chats-content">
+            <div class="settings-form" style="margin-bottom: 20px;">
+                <h3>Your Chats</h3>
+                <div id="chat-list-container" class="peer-list">
+                    <div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No chats yet</div>
+                </div>
+            </div>
+            <div class="settings-form">
+                <h3>Join or Create a Chat</h3>
+                <div class="form-group">
+                    <label class="form-label">Invite Code</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="join-code-input" class="form-input" placeholder="Enter Code" style="flex-grow:1;">
+                        <button id="join-chat-btn" class="add-btn" style="padding:12px 20px;">Join</button>
+                    </div>
+                </div>
+                <div style="text-align:center; margin:10px 0; opacity:0.5;">or</div>
+                <button id="create-chat-btn" class="add-btn" style="width:100%; border-radius:25px; background:var(--accent); color:var(--background-color);">Start New Chat</button>
+            </div>
+        </div>
+
+        <!-- Chat View Tab -->
+        <div class="tab-content" id="chat-content">
+            <div class="chat-header" id="chat-header" style="padding: 10px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--glass-border); margin-bottom:10px; justify-content: space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="add-btn" id="back-to-chats-btn" style="padding:8px;"><span class="material-symbols-rounded">arrow_back</span></button>
+                    <h3 id="current-chat-title" style="margin:0; font-family:'Open Runde', sans-serif;">Select a chat</h3>
+                </div>
+                <div class="status-badge" id="connection-status">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text" style="font-size: 10px;">Code: -</span>
+                </div>
+            </div>
+            
             <div class="chat-container" id="chat-messages">
                 <div style="text-align: center; opacity: 0.5; font-size: 0.85rem; margin-top: 20px;" id="empty-state">
-                    Add people to this chat
+                    Start a conversation
                 </div>
             </div>
             
             <div class="input-section">
+                <button class="add-btn hide-on-focus" id="attach-btn" style="margin-right:15px; padding:15px; border-radius:50%;"><span class="material-symbols-rounded">attach_file</span></button>
                 <input type="text" class="chat-input" id="message-input" placeholder="Type a message" autocomplete="off">
-                <button class="add-btn" id="send-btn"><span class="material-symbols-rounded">send</span></button>
-            </div>
-        </div>
-
-        <!-- Room Tab -->
-        <div class="tab-content" id="room-content">
-            <div class="settings-form">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="font-family: 'Open Runde', sans-serif;">Network Configuration</h3>
-                    <div class="status-badge" id="connection-status">
-                        <div class="status-dot" id="status-dot"></div>
-                        <span id="status-text">Disconnected</span>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Your name</label>
-                    <input type="text" class="form-input" id="username-input" placeholder="Enter a name">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Room ID</label>
-                    <input type="text" class="form-input" id="room-id-input" placeholder="Enter an ID">
-                </div>
-
-                <button class="add-btn" id="connect-btn" style="width: 100%; border-radius: 25px; margin-top: 10px; background-color: var(--accent); color: var(--background-color);">
-                    Connect
-                </button>
-
-                <div style="margin-top: 20px;">
-                    <label class="form-label">Active poople (<span id="peer-count">0</span>)</label>
-                    <div class="peer-list" id="peer-list">
-                        <div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No one else is here</div>
-                    </div>
-                </div>
+                <button class="add-btn" id="send-btn" style="padding:15px; border-radius:50%;"><span class="material-symbols-rounded">send</span></button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Tab Management ---
+// --- Tab Management ---
         const tabButtons = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
 
         tabButtons.forEach(button => {
             button.addEventListener('click', () => {
+                if (button.id === 'tab-btn-chat' && !currentChatId) return;
+                
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 
@@ -349,41 +407,77 @@
                 const tabId = button.dataset.tab + '-content';
                 document.getElementById(tabId).classList.add('active');
 
-                // If switching to chat, scroll to bottom
                 if (button.dataset.tab === 'chat') {
                     scrollToBottom();
                 }
             });
         });
 
-        // --- Trystero P2P Logic ---
-        let trysteroRoom = null;
-        let sendChatMessage = null;
-        let sendProfile = null;
-        let peers = {}; // Map of peerId -> { username }
+        // --- Core State ---
+        let currentUser = JSON.parse(localStorage.getItem('messages_user')) || null;
+        let chats = JSON.parse(localStorage.getItem('messages_chats')) || [];
+        let profiles = JSON.parse(localStorage.getItem('messages_profiles')) || {};
+        let activeRooms = {};
+        let currentChatId = null;
 
-        // DOM Elements
+        // --- DOM Elements ---
+        const setupScreen = document.getElementById('setup-screen');
+        const chatListContainer = document.getElementById('chat-list-container');
         const chatMessages = document.getElementById('chat-messages');
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
-        const usernameInput = document.getElementById('username-input');
-        const roomIdInput = document.getElementById('room-id-input');
-        const connectBtn = document.getElementById('connect-btn');
-        const statusDot = document.getElementById('status-dot');
-        const statusText = document.getElementById('status-text');
-        const peerList = document.getElementById('peer-list');
-        const peerCount = document.getElementById('peer-count');
-        const emptyState = document.getElementById('empty-state');
+        const attachBtn = document.getElementById('attach-btn');
 
-        // State
-        let currentRoomId = localStorage.getItem('messages_room_id') || generateRandomString(8);
-        let currentUsername = localStorage.getItem('messages_username') || 'User_' + generateRandomString(4);
-        let isConnected = false;
+        // --- Initialization ---
+        function bootstrap() {
+            if (!currentUser) {
+                setupScreen.style.display = 'flex';
+                return;
+            }
+            
+            profiles[currentUser.id] = { name: currentUser.name, pfp: currentUser.pfp };
+            saveProfiles();
 
-        // Initialize UI values
-        usernameInput.value = currentUsername;
-        roomIdInput.value = currentRoomId;
+            if (!window.Trystero) {
+                window.addEventListener('trystero-ready', initRooms, { once: true });
+                return;
+            }
+            initRooms();
+        }
 
+        // --- Setup Logic ---
+        let tempPfp = null;
+        document.getElementById('upload-pfp-btn').addEventListener('click', async () => {
+            try {
+                const files = await Gurasuraisu.requestFile({ accept: 'image/*', multiple: false });
+                if (files && files.length > 0) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        tempPfp = e.target.result;
+                        document.getElementById('pfp-preview').style.backgroundImage = `url(${tempPfp})`;
+                        document.getElementById('pfp-preview').innerHTML = '';
+                    };
+                    reader.readAsDataURL(files[0]);
+                }
+            } catch (err) { console.error(err); }
+        });
+
+        document.getElementById('finish-setup-btn').addEventListener('click', () => {
+            const name = document.getElementById('setup-name').value.trim();
+            if (!name) return Gurasuraisu.showPopup('Please enter a name');
+            if (!tempPfp) return Gurasuraisu.showPopup('Please choose a profile picture');
+
+            currentUser = {
+                id: 'user_' + generateRandomString(16),
+                name: name,
+                pfp: tempPfp
+            };
+            localStorage.setItem('messages_user', JSON.stringify(currentUser));
+            setupScreen.style.display = 'none';
+            bootstrap();
+        });
+
+        // --- Utility ---
         function generateRandomString(length) {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
             let result = '';
@@ -391,80 +485,20 @@
             return result;
         }
 
-        function formatTime(date) {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        function saveChats() { localStorage.setItem('messages_chats', JSON.stringify(chats)); }
+        function saveProfiles() { localStorage.setItem('messages_profiles', JSON.stringify(profiles)); }
+
+        // --- Networking ---
+        function initRooms() {
+            chats.forEach(chat => joinTrysteroRoom(chat.id));
+            renderChatList();
         }
 
-        function scrollToBottom() {
-            setTimeout(() => {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 50);
-        }
-
-        function appendMessage(text, senderName, isMine) {
-            if (emptyState) emptyState.style.display = 'none';
-
-            const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${isMine ? 'mine' : 'theirs'}`;
-
-            if (!isMine) {
-                const senderEl = document.createElement('div');
-                senderEl.className = 'message-sender';
-                senderEl.textContent = senderName || 'Unknown';
-                bubble.appendChild(senderEl);
-            }
-
-            const textEl = document.createElement('div');
-            textEl.className = 'message-text';
-            textEl.textContent = text;
-            bubble.appendChild(textEl);
-
-            const timeEl = document.createElement('div');
-            timeEl.className = 'message-time';
-            timeEl.textContent = formatTime(new Date());
-            bubble.appendChild(timeEl);
-
-            chatMessages.appendChild(bubble);
-            scrollToBottom();
-        }
-
-        function updatePeerUI() {
-            peerCount.textContent = Object.keys(peers).length;
-            peerList.innerHTML = '';
-
-            if (Object.keys(peers).length === 0) {
-                peerList.innerHTML = '<div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No one else is here.</div>';
-                return;
-            }
-
-            Object.entries(peers).forEach(([id, data]) => {
-                const item = document.createElement('div');
-                item.className = 'peer-item';
-                item.innerHTML = `
-                    <span class="material-symbols-rounded" style="color: #4caf50;">person</span>
-                    <span>${data.username || 'Connecting'}</span>
-                `;
-                peerList.appendChild(item);
-            });
-        }
-
-        async function initConnection() {
-            if (isConnected && trysteroRoom) {
-                trysteroRoom.leave();
-            }
-
-            currentUsername = usernameInput.value.trim() || 'Anonymous';
-            currentRoomId = roomIdInput.value.trim() || generateRandomString(8);
-
-            localStorage.setItem('messages_username', currentUsername);
-            localStorage.setItem('messages_room_id', currentRoomId);
-
-            statusDot.classList.remove('connected');
-            statusText.textContent = 'Connecting';
-            connectBtn.textContent = 'Reconnecting';
+        function joinTrysteroRoom(chatId) {
+            if (activeRooms[chatId]) return;
 
             const MESSAGES_CONFIG = { 
-                appId: 'polygol-messages-v1',
+                appId: 'polygol-messages-v2',
                 trackerUrls: [
                     'wss://tracker.openwebtorrent.com',
                     'wss://tracker.btorrent.xyz',
@@ -474,135 +508,245 @@
                     'wss://tracker.nanoha.org:443/announce',
                     'wss://tracker.ghostchu-services.top:443/announce',
                     'wss://tracker.files.fm:7073/announce'
-                ],
-                rtcConfig: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:global.stun.twilio.com:3478' }
-                    ]
-                }
+                ]
             };
 
             try {
-                trysteroRoom = window.Trystero.joinRoom(MESSAGES_CONFIG, currentRoomId);
+                const room = window.Trystero.joinRoom(MESSAGES_CONFIG, chatId);
+                const [sendChat, getChat] = room.makeAction('chat');
+                const [sendProfile, getProfile] = room.makeAction('profile');
 
-                // Setup Actions
-                const [sendChat, getChat] = trysteroRoom.makeAction('chat');
-                const [sendProf, getProf] = trysteroRoom.makeAction('profile');
+                activeRooms[chatId] = { room, sendChat, sendProfile };
 
-                sendChatMessage = sendChat;
-                sendProfile = sendProf;
+                getChat((msg, peerId) => handleIncomingMessage(chatId, msg, peerId));
 
-                // Handle Incoming Chat
-                getChat((msg, peerId) => {
-                    const senderName = peers[peerId] ? peers[peerId].username : 'Unknown';
-                    appendMessage(msg.text, senderName, false);
-                    
-                    // Notification Logic
-                    if document.hasFocus() {
-                        Gurasuraisu.playSound('popup');
-                    }
-                    
-                    if (!document.hasFocus()) {
-                        Gurasuraisu.showNotification(`New message`, {
-                            heading: '${senderName}',
-                            icon: 'chat'
-                        });
-                    }
+                getProfile((profile, peerId) => {
+                    profiles[profile.id] = { name: profile.name, pfp: profile.pfp };
+                    saveProfiles();
+                    if (currentChatId === chatId) renderMessages(chatId);
                 });
 
-                // Handle Incoming Profile updates
-                getProf((profile, peerId) => {
-                    if (!peers[peerId]) peers[peerId] = {};
-                    peers[peerId].username = profile.username;
-                    updatePeerUI();
+                room.onPeerJoin(peerId => {
+                    sendProfile({ id: currentUser.id, name: currentUser.name, pfp: currentUser.pfp }, peerId);
+                    if (currentChatId === chatId) updatePeerCount();
                 });
-
-                // Handle Peer Join
-                trysteroRoom.onPeerJoin(peerId => {
-                    peers[peerId] = { username: '...' };
-                    updatePeerUI();
-                    
-                    // Send our profile to the new peer so they know who we are
-                    if (sendProfile) {
-                        sendProfile({ username: currentUsername }, peerId);
-                    }
-                });
-
-                // Handle Peer Leave
-                trysteroRoom.onPeerLeave(peerId => {
-                    delete peers[peerId];
-                    updatePeerUI();
-                });
-
-                // Update Local UI State
-                isConnected = true;
-                statusDot.classList.add('connected');
-                statusText.textContent = `Connected (${currentRoomId})`;
-                connectBtn.textContent = 'Reconnect / Update';
                 
-                Gurasuraisu.showPopup(`Joined room: ${currentRoomId}`);
+                room.onPeerLeave(() => {
+                    if (currentChatId === chatId) updatePeerCount();
+                });
 
-            } catch (e) {
-                console.error("Failed to initialize Trystero:", e);
-                statusText.textContent = 'Error Connecting';
-                Gurasuraisu.showPopup("Failed to connect to P2P network.");
+            } catch (e) { console.error("Failed to join room", chatId, e); }
+        }
+
+        function updatePeerCount() {
+            if (!currentChatId || !activeRooms[currentChatId]) return;
+            let countStr = "Connected";
+            
+            if (typeof activeRooms[currentChatId].room.getPeers === 'function') {
+                const count = Object.keys(activeRooms[currentChatId].room.getPeers()).length;
+                countStr = `${count} online`;
+            }
+            
+            document.getElementById('status-text').textContent = `Code: ${currentChatId} • ${countStr}`;
+            document.getElementById('status-dot').classList.add('connected');
+        }
+
+        function handleIncomingMessage(chatId, msg, peerId) {
+            const history = JSON.parse(localStorage.getItem(`messages_history_${chatId}`)) || [];
+            if (!history.find(m => m.id === msg.id)) {
+                history.push(msg);
+                localStorage.setItem(`messages_history_${chatId}`, JSON.stringify(history));
+                
+                if (currentChatId === chatId) {
+                    appendMessageUI(msg);
+                } else {
+                    const sender = profiles[msg.senderId] ? profiles[msg.senderId].name : 'Someone';
+                    const chatName = chats.find(c => c.id === chatId)?.name || 'Chat';
+                    Gurasuraisu.showNotification(`Message in ${chatName}`, { heading: sender });
+                    Gurasuraisu.playSound('success');
+                }
             }
         }
 
-        // --- Interaction Handlers ---
-
-        function handleSend() {
-            if (!isConnected || !sendChatMessage) {
-                Gurasuraisu.showPopup("You must connect to a room first.");
+        // --- UI Rendering ---
+        function renderChatList() {
+            chatListContainer.innerHTML = '';
+            if (chats.length === 0) {
+                chatListContainer.innerHTML = '<div style="opacity: 0.5; font-size: 0.85rem; padding: 10px;">No chats yet</div>';
                 return;
             }
+            chats.forEach(chat => {
+                const item = document.createElement('div');
+                item.className = 'chat-item';
+                item.innerHTML = `
+                    <div class="chat-icon">${chat.name.charAt(0).toUpperCase()}</div>
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: 600;">${chat.name}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.6;">Code: ${chat.id}</div>
+                    </div>
+                `;
+                item.addEventListener('click', () => openChat(chat.id));
+                chatListContainer.appendChild(item);
+            });
+        }
 
-            const text = messageInput.value.trim();
-            if (!text) return;
-
-            // Broadcast to all peers
-            sendChatMessage({ text: text });
+        function openChat(chatId) {
+            currentChatId = chatId;
+            const chat = chats.find(c => c.id === chatId);
+            document.getElementById('current-chat-title').textContent = chat ? chat.name : 'Chat';
+            document.getElementById('tab-btn-chat').style.display = 'flex';
             
-            // Add to local UI
-            appendMessage(text, currentUsername, true);
+            updatePeerCount();
+            
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById('tab-btn-chat').classList.add('active');
+            document.getElementById('chat-content').classList.add('active');
+            
+            renderMessages(chatId);
+            if (window.innerWidth > 800) messageInput.focus();
+        }
+
+        document.getElementById('back-to-chats-btn').addEventListener('click', () => {
+            tabButtons[0].click();
+        });
+
+        function renderMessages(chatId) {
+            chatMessages.innerHTML = '';
+            const history = JSON.parse(localStorage.getItem(`messages_history_${chatId}`)) || [];
+            
+            if (history.length === 0) {
+                chatMessages.innerHTML = `<div style="text-align: center; opacity: 0.5; font-size: 0.85rem; margin-top: 20px;" id="empty-state">Start a conversation</div>`;
+            } else {
+                history.forEach(msg => appendMessageUI(msg));
+            }
+            scrollToBottom();
+        }
+
+        function appendMessageUI(msg) {
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) emptyState.remove();
+
+            const isMine = msg.senderId === currentUser.id;
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${isMine ? 'mine' : 'theirs'}`;
+
+            if (!isMine) {
+                const senderProfile = profiles[msg.senderId] || { name: 'Unknown', pfp: '' };
+                const senderRow = document.createElement('div');
+                senderRow.className = 'sender-row';
+                
+                if (senderProfile.pfp) {
+                    const pfpEl = document.createElement('div');
+                    pfpEl.className = 'sender-pfp';
+                    pfpEl.style.backgroundImage = `url(${senderProfile.pfp})`;
+                    senderRow.appendChild(pfpEl);
+                }
+                
+                const senderNameEl = document.createElement('div');
+                senderNameEl.className = 'message-sender';
+                senderNameEl.textContent = senderProfile.name;
+                senderRow.appendChild(senderNameEl);
+                bubble.appendChild(senderRow);
+            }
+
+            if (msg.text) {
+                const textEl = document.createElement('div');
+                textEl.className = 'message-text';
+                textEl.textContent = msg.text;
+                bubble.appendChild(textEl);
+            }
+
+            if (msg.imageBase64) {
+                const imgEl = document.createElement('img');
+                imgEl.className = 'message-image';
+                imgEl.src = msg.imageBase64;
+                imgEl.onload = () => scrollToBottom();
+                bubble.appendChild(imgEl);
+            }
+
+            const timeEl = document.createElement('div');
+            timeEl.className = 'message-time';
+            const date = new Date(msg.timestamp);
+            timeEl.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            bubble.appendChild(timeEl);
+
+            chatMessages.appendChild(bubble);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            requestAnimationFrame(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+        }
+
+        // --- Actions ---
+        function handleSend(text, imageBase64 = null) {
+            if (!currentChatId || !activeRooms[currentChatId] || (!text && !imageBase64)) return;
+            
+            const msg = {
+                id: 'msg_' + generateRandomString(12),
+                senderId: currentUser.id,
+                text: text,
+                imageBase64: imageBase64,
+                timestamp: Date.now()
+            };
+
+            const history = JSON.parse(localStorage.getItem(`messages_history_${currentChatId}`)) || [];
+            history.push(msg);
+            localStorage.setItem(`messages_history_${currentChatId}`, JSON.stringify(history));
+
+            appendMessageUI(msg);
             Gurasuraisu.playSound('check');
+            activeRooms[currentChatId].sendChat(msg);
             
-            // Clear input
-            messageInput.value = '';
-            
-            // Refocus input if on desktop
-            if (window.innerWidth > 800) {
-                messageInput.focus();
-            }
+            if (text) messageInput.value = '';
+            if (window.innerWidth > 800) messageInput.focus();
         }
 
-        sendBtn.addEventListener('click', handleSend);
-        
+        sendBtn.addEventListener('click', () => handleSend(messageInput.value.trim()));
         messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleSend();
-            }
+            if (e.key === 'Enter') handleSend(messageInput.value.trim());
         });
 
-        connectBtn.addEventListener('click', () => {
-            initConnection();
-            // Automatically switch back to chat tab after connecting
-            setTimeout(() => {
-                tabButtons[0].click();
-            }, 500);
+        attachBtn.addEventListener('click', async () => {
+            try {
+                const files = await Gurasuraisu.requestFile({ accept: 'image/*', multiple: false });
+                if (files && files.length > 0) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => handleSend('', e.target.result);
+                    reader.readAsDataURL(files[0]);
+                }
+            } catch(e) { console.error(e); }
         });
 
-        function bootstrap() {
-            if (!window.Trystero) {
-                window.addEventListener('trystero-ready', bootstrap, { once: true });
-                return;
-            }
-            initConnection();
-        }
+        document.getElementById('create-chat-btn').addEventListener('click', async () => {
+            const name = await Gurasuraisu.showPrompt('Enter a name for this chat:', 'New Chat');
+            if (!name) return;
+            const newId = generateRandomString(8);
+            chats.push({ id: newId, name: name });
+            saveChats();
+            joinTrysteroRoom(newId);
+            renderChatList();
+            openChat(newId);
+            Gurasuraisu.showPopup(`Chat created! Invite code: ${newId}`);
+        });
+
+        document.getElementById('join-chat-btn').addEventListener('click', () => {
+            const code = document.getElementById('join-code-input').value.trim();
+            if (!code) return Gurasuraisu.showPopup('Enter a valid code');
+            if (chats.find(c => c.id === code)) return openChat(code);
+            
+            chats.push({ id: code, name: `Chat ${code}` });
+            saveChats();
+            joinTrysteroRoom(code);
+            renderChatList();
+            openChat(code);
+            document.getElementById('join-code-input').value = '';
+        });
 
         document.addEventListener('DOMContentLoaded', bootstrap);
-
     </script>
 </body>
 </html>
