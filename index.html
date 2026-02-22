@@ -833,7 +833,7 @@
                         id: currentUser.id, 
                         name: currentUser.name, 
                         pfp: currentUser.pfp,
-                        password: expectedPass 
+                        password: password 
                     }, peerId);
 
                     if (currentChatId === chatId) updatePeerCount();
@@ -921,7 +921,7 @@
                 await setDB('messages', chatId, history);
                 
                 if (currentChatId === chatId) {
-                    appendMessageUI(msg, true);
+                    appendMessageUI(msg);
                 } else {
                     const now = Date.now();
                     
@@ -1049,7 +1049,7 @@
             if (history.length === 0) {
                 chatMessages.innerHTML = `<div style="text-align: center; font-size: 0.85rem; margin-top: 20px;" id="empty-state">Start a conversation</div>`;
             } else {
-                history.forEach(msg => appendMessageUI(msg, false));
+                history.forEach(msg => appendMessageUI(msg));
             }
             scrollToBottom();
         }
@@ -1278,7 +1278,7 @@
             history.push(msg);
             await setDB('messages', currentChatId, history);
 
-            appendMessageUI(msg, true);
+            appendMessageUI(msg);
             Gurasuraisu.playSound('check');
             activeRooms[currentChatId].sendChat(msg);
             
