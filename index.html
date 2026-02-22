@@ -58,7 +58,7 @@
             flex-direction: column;
         }
 
-        /* --- Input Section (Matched to Fantaskical) --- */
+        /* --- Input Section --- */
         .input-section {
             display: flex;
             position: fixed;
@@ -250,10 +250,11 @@
 
         .form-input {
             padding: 12px 16px;
-            border-radius: 25px;
+            border-radius: 35px;
             corner-shape: superellipse(1.5);
             border: 1px solid var(--glass-border);
-            background-color: var(--background-color-tr);
+            background-color: var(--search-background);
+            box-shadow: var(--sun-shadow)
             color: var(--text-color);
             font-size: 1rem;
             outline: none;
@@ -295,9 +296,11 @@
             align-items: center;
             gap: 10px;
             padding: 10px 15px;
-            background-color: var(--background-color-tr);
+            background-color: var(--search-background);
             border-radius: 20px;
+            corner-shape: superellipse(1.5);
             border: 1px solid var(--glass-border);
+            box-shadow: var(--sun-shadow);
         }
 
         /* Animations */
@@ -327,13 +330,13 @@
 <body data-app-name="MESSAGES">
     <div class="container">
     <!-- Setup Screen (Overlay) -->
-    <div id="setup-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--background-color-tr); backdrop-filter: var(--edge-refraction-filter); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+    <div id="setup-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--background-color-tr); backdrop-filter: blur(50px); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
         <h2 style="margin-bottom:20px;">Polygol Messages</h2>
         <div id="pfp-preview" style="width:120px; height:120px; border-radius:50%; background:var(--search-background); margin-bottom:20px; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="document.getElementById('upload-pfp-btn').click()">
             <span class="material-symbols-rounded" style="font-size:40px; opacity:0.5;">add_a_photo</span>
         </div>
-        <button id="upload-pfp-btn" class="add-btn" style="margin-bottom:20px;">Add a picture</button>
-        <input type="text" id="setup-name" class="form-input" placeholder="Name" style="width:100%; max-width:300px; margin-bottom:20px; text-align:center;">
+        <button id="upload-pfp-btn" class="add-btn" style="margin-bottom:20px; display: none;">Add a picture</button>
+        <input type="text" id="setup-name" class="form-input" placeholder="Name" style="width:100%; max-width:300px; margin-bottom:20px;">
         <button id="finish-setup-btn" class="add-btn" style="width:100%; max-width:300px; background:var(--accent); color:var(--background-color);">Get Started</button>
     </div>
 
