@@ -699,17 +699,33 @@
             return result;
         }
 
+        async function getSecureRoomId(chatId, password) {
+            if (!password) return chatId;
+            const msgUint8 = new TextEncoder().encode(chatId + password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+        }
+
         async function saveChats() { await setDB('state', 'chats', chats); }
         async function saveProfiles() { await setDB('state', 'profiles', profiles); }
 
         // --- Networking ---
-        function initRooms() {
-            chats.forEach(chat => joinTrysteroRoom(chat.id));
+        async function initRooms() {
+            for (const chat of chats) {
+                await joinTrysteroRoom(chat.id);
+            }
             renderChatList();
         }
 
         function joinTrysteroRoom(chatId) {
             if (activeRooms[chatId]) return;
+            const chatObj = chats.find(c => c.id === chatId);
+            const password = chatObj ? chatObj.password : '';
+            
+            // Derive a room ID that is impossible to join without the password
+            const secureId = await getSecureRoomId(chatId, password);
+            const authorizedPeers = new Set();
 
             const MESSAGES_CONFIG = { 
                 appId: 'polygol-messages-v2',
@@ -726,7 +742,7 @@
             };
 
             try {
-                const room = window.Trystero.joinRoom(MESSAGES_CONFIG, chatId);
+                const room = window.Trystero.joinRoom(MESSAGES_CONFIG, secureId);
                 const [sendChat, getChat] = room.makeAction('chat');
                 const [sendProfile, getProfile] = room.makeAction('profile');
                 const [sendHistory, getHistory] = room.makeAction('history');
@@ -736,14 +752,25 @@
 
                 activeRooms[chatId] = { room, sendChat, sendProfile, sendHistory, sendReaction, sendTyping, sendVote };
 
-                getChat((msg, peerId) => handleIncomingMessage(chatId, msg, peerId));
-                getTyping((isTyping, peerId) => handleTyping(chatId, peerId, isTyping));
+                getChat((msg, peerId) => {
+                    if (!authorizedPeers.has(peerId)) return;
+                    handleIncomingMessage(chatId, msg, peerId);
+                });
                 getProfile(async (profile, peerId) => {
+                    // Password check is now dual-layered:
+                    // 1. Swarm isolation (Secure Room ID)
+                    // 2. Peer-level validation
+                    if (profile.password !== password) {
+                        console.warn(`Peer ${peerId} rejected: Incorrect password.`);
+                        return;
+                    }
+                    authorizedPeers.add(peerId);
                     profiles[profile.id] = { name: profile.name, pfp: profile.pfp };
                     await saveProfiles();
                     if (currentChatId === chatId) renderMessages(chatId);
                 });
                 getHistory(async (peerHistory, peerId) => {
+                    if (!authorizedPeers.has(peerId)) return;
                     const localHistory = await getDB('messages', chatId) || [];
                     const historyMap = new Map(localHistory.map(m => [m.id, m]));
                     let changed = false;
@@ -767,7 +794,12 @@
                         if (currentChatId === chatId) renderMessages(chatId);
                     }
                 });
+                getTyping((isTyping, peerId) => {
+                    if (!authorizedPeers.has(peerId)) return;
+                    handleTyping(chatId, peerId, isTyping)
+                });
                 getReaction(async (data, peerId) => {
+                    if (!authorizedPeers.has(peerId)) return;
                     const localHistory = await getDB('messages', chatId) || [];
                     const msg = localHistory.find(m => m.id === data.messageId);
                     if (msg) {
@@ -778,6 +810,7 @@
                     }
                 });
                 getVote(async (data, peerId) => {
+                    if (!authorizedPeers.has(peerId)) return;
                     const localHistory = await getDB('messages', chatId) || [];
                     const msg = localHistory.find(m => m.id === data.msgId);
                     if (msg && msg.poll) {
@@ -789,11 +822,22 @@
                 });
 
                 room.onPeerJoin(async peerId => {
-                    sendProfile({ id: currentUser.id, name: currentUser.name, pfp: currentUser.pfp }, peerId);
+                    // Send profile WITH password for verification
+                    sendProfile({ 
+                        id: currentUser.id, 
+                        name: currentUser.name, 
+                        pfp: currentUser.pfp,
+                        password: expectedPass 
+                    }, peerId);
+
                     if (currentChatId === chatId) updatePeerCount();
                     
-                    const history = await getDB('messages', chatId) || [];
-                    if (history.length > 0) sendHistory(history, peerId);
+                    // Delay history sync slightly to allow profile verification first
+                    setTimeout(async () => {
+                        if (!authorizedPeers.has(peerId)) return;
+                        const history = await getDB('messages', chatId) || [];
+                        if (history.length > 0) sendHistory(history, peerId);
+                    }, 1000);
                 });
                 
                 room.onPeerLeave(() => {
@@ -1309,21 +1353,25 @@
             if (existing) { openChat(existing.id); document.getElementById('join-code-input').value = ''; return; }
 
             const isRoomId = /^[A-Za-z0-9]{8}$/.test(input);
+            let chatId, chatName, chatPass;
             if (isRoomId) {
-                const pass = await Gurasuraisu.showPrompt('Enter chat password (if any) or leave blank:', 'Password');
-                chats.push({ id: input, name: `Chat ${input}`, password: pass });
-                await saveChats();
-                joinTrysteroRoom(input);
-                renderChatList(); openChat(input);
+                chatId = input;
+                chatName = await Gurasuraisu.showPrompt('What do you want to call this chat?', 'Joining chat', `Chat ${input}`);
+                if (!chatName) return;
+                chatPass = await Gurasuraisu.showPrompt('Enter chat password (if any) or leave blank:', 'Password');
             } else {
-                const pass = await Gurasuraisu.showPrompt('Set a password for this new chat (optional):', 'Password');
-                const newId = generateRandomString(8);
-                chats.push({ id: newId, name: input, password: pass });
-                await saveChats();
-                joinTrysteroRoom(newId);
-                renderChatList(); openChat(newId);
-                Gurasuraisu.showPopup(`Created chat ${newId}`);
+                chatId = generateRandomString(8);
+                chatName = input;
+                chatPass = await Gurasuraisu.showPrompt('Set a password for this group (optional):', '');
             }
+
+            chats.push({ id: chatId, name: chatName, password: chatPass });
+            await saveChats();
+            await joinTrysteroRoom(chatId);
+            renderChatList(); 
+            openChat(chatId);
+            if (!isRoomId) Gurasuraisu.showPopup(`Created chat ${chatId}`);
+            
             document.getElementById('join-code-input').value = '';
         }
 
