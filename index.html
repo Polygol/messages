@@ -718,7 +718,7 @@
             renderChatList();
         }
 
-        function joinTrysteroRoom(chatId) {
+        async function joinTrysteroRoom(chatId) {
             if (activeRooms[chatId]) return;
             const chatObj = chats.find(c => c.id === chatId);
             const password = chatObj ? chatObj.password : '';
