@@ -1,5 +1,6 @@
 // Polygol Messages Language Dictionary
-const LANG_EN_MESSAGES = {
+window.LANG_EN_MESSAGES = {
+
     TITLE: "Messages",
     APP_HEADING: "Polygol Messages",
     ADD_PICTURE: "Add a picture",
@@ -33,10 +34,14 @@ const LANG_EN_MESSAGES = {
     JOINING_CHAT_TITLE: "Joining chat",
     CHAT_PASSWORD_PROMPT: "Enter chat password (if any):",
     SET_PASSWORD_PROMPT: "Set a password for this group (optional):",
-    CREATED_CHAT_ALERT: "Created chat {chatId}"
+    CREATED_CHAT_ALERT: "Created chat {chatId}",
+    PASSWORD_TITLE: "Password",
+    GROUP_PASSWORD_TITLE: "Group Password",
+    REPLYING_TO: "Replying to",
 };
 
-const LANG_JP_MESSAGES = {
+window.LANG_JP_MESSAGES = {
+
     TITLE: "メッセージ",
     APP_HEADING: "Polygolメッセージ",
     ADD_PICTURE: "写真を追加",
@@ -70,10 +75,14 @@ const LANG_JP_MESSAGES = {
     JOINING_CHAT_TITLE: "チャットに参加",
     CHAT_PASSWORD_PROMPT: "パスワードを入力（ある場合）:",
     SET_PASSWORD_PROMPT: "グループのパスワードを設定（任意）:",
-    CREATED_CHAT_ALERT: "チャット {chatId} を作成しました"
+    CREATED_CHAT_ALERT: "チャット {chatId} を作成しました",
+    PASSWORD_TITLE: "パスワード",
+    GROUP_PASSWORD_TITLE: "グループパスワード",
+    REPLYING_TO: "返信先:",
 };
 
-const LANG_KO_MESSAGES = {
+window.LANG_KO_MESSAGES = {
+
     TITLE: "메시지",
     APP_HEADING: "Polygol 메시지",
     ADD_PICTURE: "사진 추가",
@@ -107,10 +116,14 @@ const LANG_KO_MESSAGES = {
     JOINING_CHAT_TITLE: "채팅 참여",
     CHAT_PASSWORD_PROMPT: "채팅 비밀번호 입력(있는 경우):",
     SET_PASSWORD_PROMPT: "그룹 비밀번호 설정(선택사항):",
-    CREATED_CHAT_ALERT: "채팅 {chatId} 생성 완료"
+    CREATED_CHAT_ALERT: "채팅 {chatId} 생성 완료",
+    PASSWORD_TITLE: "비밀번호",
+    GROUP_PASSWORD_TITLE: "그룹 비밀번호",
+    REPLYING_TO: "답장 대상:",
 };
 
-const LANG_ZH_MESSAGES = {
+window.LANG_ZH_MESSAGES = {
+
     TITLE: "消息",
     APP_HEADING: "Polygol消息",
     ADD_PICTURE: "添加头像",
@@ -144,5 +157,13 @@ const LANG_ZH_MESSAGES = {
     JOINING_CHAT_TITLE: "加入聊天",
     CHAT_PASSWORD_PROMPT: "输入聊天密码（若有）:",
     SET_PASSWORD_PROMPT: "为此群组设置密码（可选）:",
-    CREATED_CHAT_ALERT: "已创建聊天 {chatId}"
+    CREATED_CHAT_ALERT: "已创建聊天 {chatId}",
+    PASSWORD_TITLE: "密码",
+    GROUP_PASSWORD_TITLE: "群组密码",
+    REPLYING_TO: "回复给:",
 };
+
+var LANG_EN_MESSAGES = window.LANG_EN_MESSAGES;
+var LANG_JP_MESSAGES = window.LANG_JP_MESSAGES;
+var LANG_KO_MESSAGES = window.LANG_KO_MESSAGES;
+var LANG_ZH_MESSAGES = window.LANG_ZH_MESSAGES;

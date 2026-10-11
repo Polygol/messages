@@ -449,6 +449,61 @@
         }
     </style>
     <script src="lang.js"></script>
+<script src="lang.js"></script>
+    <script>
+        function getAppLanguage() {
+            let l = (localStorage.getItem('language') || localStorage.getItem('selectedLanguage') || 'EN').toUpperCase();
+            if (l === 'JA') l = 'JP';
+            return ['EN', 'JP', 'KO', 'ZH'].includes(l) ? l : 'EN';
+        }
+
+        function t(key, params = {}) {
+            const lang = getAppLanguage();
+            const dict = window['LANG_' + lang + '_MESSAGES'] || window['LANG_EN_MESSAGES'] || {};
+            let str = dict[key] || key;
+            Object.keys(params).forEach(p => str = str.replace(new RegExp('\\{' + p + '\\}', 'g'), params[p]));
+            return str;
+        }
+
+        function applyLanguage(langCode) {
+            if (langCode) localStorage.setItem('language', langCode);
+            const lang = getAppLanguage();
+            const bcpMap = { EN: 'en-US', JP: 'ja-JP', KO: 'ko-KR', ZH: 'zh-CN' };
+            document.documentElement.lang = bcpMap[lang] || 'en-US';
+            
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                const k = el.getAttribute('data-lang-key');
+                if (k) {
+                    if (el.tagName === 'TITLE') document.title = t(k);
+                    else el.textContent = t(k);
+                }
+            });
+            
+            document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+                const k = el.getAttribute('data-lang-placeholder');
+                if (k) el.placeholder = t(k);
+            });
+            
+            document.querySelectorAll('[data-lang-title]').forEach(el => {
+                const k = el.getAttribute('data-lang-title');
+                if (k) el.title = t(k);
+            });
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data && (e.data.type === 'languageUpdate' || e.data.type === 'localeUpdate')) {
+                applyLanguage(e.data.languageCode);
+            }
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'language' || e.key === 'selectedLanguage') {
+                applyLanguage(e.newValue);
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => applyLanguage());
+    </script>
 </head>
 <body data-app-name="MESSAGES">
     <div class="container">
@@ -670,8 +725,8 @@
 
         document.getElementById('finish-setup-btn').addEventListener('click', async () => {
             const name = document.getElementById('setup-name').value.trim();
-            if (!name) return Polygol.showPopup('Enter a name');
-            if (!tempPfp) return Polygol.showPopup('Choose a profile picture');
+            if (!name) return Polygol.showPopup(t('ENTER_NAME_PROMPT'));
+            if (!tempPfp) return Polygol.showPopup(t('CHOOSE_PFP_PROMPT'));
 
             currentUser = {
                 id: 'user_' + generateRandomString(16),
@@ -971,7 +1026,7 @@
         }
 
         document.getElementById('poll-btn').addEventListener('click', async () => {
-            const question = await Polygol.showPrompt('Poll question:', 'Poll');
+            const question = await Polygol.showPrompt(t('POLL_QUESTION_PROMPT'), t('POLL_TITLE'));
             if (!question) return;
             const optsRaw = await Polygol.showPrompt('Options (comma separated):', 'Poll');
             if (!optsRaw) return;
@@ -1115,7 +1170,7 @@
                 const replyBanner = document.createElement('div');
                 replyBanner.className = 'reply-banner';
                 replyBanner.style.cursor = 'pointer';
-                replyBanner.textContent = `Replying to ${msg.replyTo.senderName}: ${msg.replyTo.text}`;
+                replyBanner.textContent = `${t("REPLYING_TO")} ${msg.replyTo.senderName}: ${msg.replyTo.text}`;
                 
                 replyBanner.onclick = (e) => {
                     e.stopPropagation();
@@ -1125,7 +1180,7 @@
                         target.classList.add('highlight');
                         setTimeout(() => target.classList.remove('highlight'), 1000);
                     } else {
-                        Polygol.showPopup("Original message not found in history");
+                        Polygol.showPopup(t('ORIGINAL_MSG_NOT_FOUND'));
                     }
                 };
                 bubble.appendChild(replyBanner);
@@ -1191,7 +1246,7 @@
             const timeEl = document.createElement('div');
             timeEl.className = 'message-time';
             const date = new Date(msg.timestamp);
-            timeEl.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const bcpMap = { EN: 'en-US', JP: 'ja-JP', KO: 'ko-KR', ZH: 'zh-CN' }; timeEl.textContent = date.toLocaleTimeString(bcpMap[getAppLanguage()] || 'en-US', { hour: '2-digit', minute: '2-digit' });
             bubble.appendChild(timeEl);
 
             if (msg.reactions && Array.isArray(msg.reactions) && msg.reactions.length > 0) {
@@ -1227,7 +1282,7 @@
             replyingToMsg = msg;
             const indicator = document.getElementById('replying-to-indicator');
             const textStr = msg.text || 'Image';
-            document.getElementById('replying-to-text').textContent = `Replying to: ${textStr}`;
+            document.getElementById('replying-to-text').textContent = `${t("REPLYING_TO")} ${textStr}`;
             indicator.style.display = 'flex';
             if (window.innerWidth > 800) messageInput.focus();
         }
@@ -1239,7 +1294,7 @@
         window.cancelReply = cancelReply;
 
         async function addReaction(msg) {
-            const emoji = await Polygol.showPrompt('Enter something to react with:', 'React to Message', '👍');
+            const emoji = await Polygol.showPrompt(t('REACT_PROMPT'), t('REACT_TITLE'), '👍');
             if (!emoji) return;
             
             const localHistory = await getDB('messages', currentChatId) || [];
@@ -1268,7 +1323,7 @@
         async function promptDeleteChat(chatId) {
             const chat = chats.find(c => c.id === chatId);
             if (!chat) return;
-            const confirm = await Polygol.showConfirm(`Leave and delete chat "${chat.name}"?`);
+            const confirm = await Polygol.showConfirm(t('LEAVE_CHAT_CONFIRM', {name: chat.name}));
             if (confirm) {
                 chats = chats.filter(c => c.id !== chatId);
                 await saveChats();
@@ -1393,7 +1448,7 @@
             await setDB('state', 'currentUser', currentUser);
             profiles[currentUser.id] = { name: currentUser.name, pfp: currentUser.pfp };
             await saveProfiles();
-            Polygol.showPopup('Profile updated');
+            Polygol.showPopup(t('PROFILE_UPDATED'));
             Object.values(activeRooms).forEach(r => r.sendProfile({ id: currentUser.id, name: currentUser.name, pfp: currentUser.pfp }));
         });
         
@@ -1408,9 +1463,9 @@
             let chatId, chatName, chatPass;
             if (isRoomId) {
                 chatId = input;
-                chatName = await Polygol.showPrompt('What do you want to call this chat?', 'Joining chat', `Chat ${input}`);
+                chatName = await Polygol.showPrompt(t('CHAT_NAME_PROMPT'), t('JOINING_CHAT_TITLE'), `Chat ${input}`);
                 if (!chatName) return;
-                chatPass = await Polygol.showPrompt('Enter chat password (if any) or leave blank:', 'Password');
+                chatPass = await Polygol.showPrompt(t('CHAT_PASSWORD_PROMPT'), t('PASSWORD_TITLE'));
             } else {
                 chatId = generateRandomString(8);
                 chatName = input;
@@ -1422,7 +1477,7 @@
             await joinTrysteroRoom(chatId);
             renderChatList(); 
             openChat(chatId);
-            if (!isRoomId) Polygol.showPopup(`Created chat ${chatId}`);
+            if (!isRoomId) Polygol.showPopup(t('CREATED_CHAT_ALERT', {chatId: chatId}));
             
             document.getElementById('join-code-input').value = '';
         }
