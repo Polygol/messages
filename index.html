@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,700,1,0" />
     <script src="https://cdn.jsdelivr.net/gh/Polygol/polygol.github.io@main/assets/polygolapp/api/polygol-api.js" defer></script>
+    <script src="lang.js"></script>
     <script type="module">
         import { joinRoom, selfId } from 'https://esm.sh/trystero@0.15.1/torrent';
         window.Trystero = { joinRoom, selfId };
@@ -449,8 +450,11 @@
         }
     </style>
     <script src="lang.js"></script>
-<script src="lang.js"></script>
+
     <script>
+        const bcpMap = { EN: 'en-US', JP: 'ja-JP', KO: 'ko-KR', ZH: 'zh-CN' };
+        window.bcpMap = bcpMap;
+
         function getAppLanguage() {
             let l = (localStorage.getItem('language') || localStorage.getItem('selectedLanguage') || 'EN').toUpperCase();
             if (l === 'JA') l = 'JP';
@@ -1469,7 +1473,7 @@
             } else {
                 chatId = generateRandomString(8);
                 chatName = input;
-                chatPass = await Polygol.showPrompt('Set a password for this group (optional):', 'Creating chat');
+                chatPass = await Polygol.showPrompt(t('SET_PASSWORD_PROMPT'), t('GROUP_PASSWORD_TITLE'));
             }
 
             chats.push({ id: chatId, name: chatName, password: chatPass });
@@ -1490,6 +1494,8 @@
         document.addEventListener('DOMContentLoaded', initialize);
     </script>
 <script>
+const bcpMap = { EN: 'en-US', JP: 'ja-JP', KO: 'ko-KR', ZH: 'zh-CN' };
+window.bcpMap = bcpMap;
 function getAppLanguage() {
     let l = (localStorage.getItem('language') || localStorage.getItem('selectedLanguage') || 'EN').toUpperCase();
     if (l === 'JA') l = 'JP';
